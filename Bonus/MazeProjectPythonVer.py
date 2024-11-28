@@ -1,3 +1,4 @@
+import math as math
 import numbers
 map = [["S","W"],["S"],["S"],["N"],["B"],["B"],["N","S","E","W"],["N","W"],["N","E"]]
 
@@ -18,6 +19,17 @@ def validCmd(cmd):
         return True
     else:
         return False
+
+
+mapLength = int(math.sqrt(len(map)))
+Position = 0
+plrVariable = 0
+movements = {
+    "F": mapLength,
+    "B": -mapLength,
+    "L": -1,
+    "R": 1}
+TurnReporter = []
 
 # Start
 plrList = []
@@ -52,8 +64,28 @@ while "RUN" not in plrList:
             print("Invalid Input")
     except:
         print("Something Went Wrong")
-        
-
 plrList = plrList[0:-1]
-print("Done")
-print(plrList)
+
+index = 0
+while index < len(plrList): 
+    cmd = plrList[index]
+    index += 1
+    #Movment
+    Position += movements.get(cmd,0)
+    if cmd[0:3] in jumpValCommands:
+        runval = int(cmd[4:-1])
+        cmd = cmd[0:3]
+    if cmd == "VAL":
+        plrVariable = runval
+    elif cmd == "VMD":
+        plrVariable += runval
+    elif (cmd == "JMP") or (cmd == "JEZ" and plrVariable == 0) or (cmd == "JNZ" and plrVariable != 0) or (cmd == "JAV"):
+        index = runval
+        if cmd == "JAV":
+            plrVariable += 1
+    elif cmd == "SCN":
+        TurnReporter.append(map[Position])
+
+
+TurnReporter.append("Complete")
+for i in TurnReporter: print(i)
