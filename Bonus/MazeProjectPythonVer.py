@@ -1,6 +1,6 @@
 import math as math
 import numbers
-map = [["S","W"],["S"],["S"],["N"],["B"],["B"],["N","S","E","W"],["N","W"],["N","E"]]
+map = [["S","W"],["S"],["S"],["N"],[],["E"],["N","S","E","W"],["N","W"],["N","E"]]
 
 sendInCommands = ["F","R","L","B","SCN","RUN"]
 Commands = ["CLR","DEL","MOD"]
@@ -20,31 +20,38 @@ def validCmd(cmd):
     else:
         return False
 
-
+# Innitialize
 mapLength = int(math.sqrt(len(map)))
-Position = 0
-plrVariable = 0
 movements = {
     "F": mapLength,
     "B": -mapLength,
     "L": -1,
     "R": 1}
-TurnReporter = []
-
-# Start
+collisionCheck = {
+    "F": "N",
+    "B": "S",
+    "L": "W",
+    "R": "E"}
+jumpCheckers = {
+    "JMP": lambda: True,
+    "JEZ": lambda: (plrVariable == 0),
+    "JNZ": lambda: (plrVariable != 0),
+    "JAV": lambda: True}
 plrList = []
-dummy = ""
 
-while "RUN" not in plrList:
-    try:
+while True: # Game Loop
+    dummy = ""
+    while "RUN" not in plrList:
         dummy = input("Enter Input: ")
         dummy = dummy.upper()
         # Editing
         if dummy[0:3] in Commands:
             if dummy == "CLR":
                 plrList = []
+                updateCmdBoard()
             elif dummy == "DEL":
                 plrList = plrList[0:-1]
+                updateCmdBoard()
             elif dummy[0:3] == "MOD":
                 commandval = int(dummy[4:-1])
                 if Isnumber(commandval):
@@ -62,30 +69,45 @@ while "RUN" not in plrList:
         else:
             updateCmdBoard()
             print("Invalid Input")
-    except:
-        print("Something Went Wrong")
-plrList = plrList[0:-1]
+    # Run
+    plrList = plrList[0:-1]
+    updateCmdBoard()
+    # Start Loops
+    LoopCount = 0
+    index = 0
+    Position = 0
+    plrVariable = 0
+    TurnReporter = []
+    while index < len(plrList): 
+        cmd = plrList[index]
+        index += 1
+        # Movment
+        if collisionCheck.get(cmd,"Zeta!!!!") not in map[Position]:
+            Position += movements.get(cmd,0)
+        elif movements.get(cmd,0) != 0:
+            TurnReporter = ["Crashed"]
+            break
+        if cmd == "SCN":
+            TurnReporter.append(map[Position])
+        # Jump/Var Detection and var Commands    
+        if cmd[0:3] in jumpValCommands:
+            runval = int(cmd[4:-1])
+            cmd = cmd[0:3]
+        if cmd == "VAL":
+            plrVariable = runval
+        elif cmd == "VMD":
+            plrVariable += runval
+        # Jump Commands
+        elif jumpCheckers.get(cmd,lambda: False)():
+            LoopCount += 1
+            index = runval
+            if cmd == "JAV":
+                plrVariable += 1
+        if LoopCount>256:
+            TurnReporter = ["Infinite Loop"]
+            break
 
-index = 0
-while index < len(plrList): 
-    cmd = plrList[index]
-    index += 1
-    #Movment
-    Position += movements.get(cmd,0)
-    if cmd[0:3] in jumpValCommands:
-        runval = int(cmd[4:-1])
-        cmd = cmd[0:3]
-    if cmd == "VAL":
-        plrVariable = runval
-    elif cmd == "VMD":
-        plrVariable += runval
-    elif (cmd == "JMP") or (cmd == "JEZ" and plrVariable == 0) or (cmd == "JNZ" and plrVariable != 0) or (cmd == "JAV"):
-        index = runval
-        if cmd == "JAV":
-            plrVariable += 1
-    elif cmd == "SCN":
-        TurnReporter.append(map[Position])
-
-
-TurnReporter.append("Complete")
-for i in TurnReporter: print(i)
+    TurnReporter.append("Complete")
+    for i in TurnReporter: print(i)
+    if input("Type Anything to Continue: ") == "exit": break
+    updateCmdBoard()
