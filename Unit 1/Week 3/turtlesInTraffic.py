@@ -1,13 +1,12 @@
 import turtle as trtl
 import random
+# setup
 horiz_turtles = []
 vert_turtles = []
-turtle_shapes =  ["arrow","circle","square","triangle","turtle"]
-horiz_colors = ["red","salmon","lime","blue","purple"]
-vert_colors = ["darkred", "orange", "green", "darkblue", "indigo"]
-
-
-
+turtle_shapes =  ["arrow","circle", "classic", "square","triangle","turtle"]
+horiz_colors = ["red","salmon", "yellow", "lime","blue","purple"]
+vert_colors = ["darkred", "orange", "darkkhaki", "green", "darkblue", "indigo"]
+# Turtle lists
 for i in range(len(turtle_shapes)):
     temp_tr = trtl.Turtle()
     temp_tr.shape(turtle_shapes[i])
@@ -19,7 +18,7 @@ for i in range(len(turtle_shapes)):
     temp_tr.shape(turtle_shapes[i])
     temp_tr.color(vert_colors[i])
     vert_turtles.append(temp_tr)
-
+# move trutles to starting position 
 ypos=0
 xpos=0
 hx=[]
@@ -40,7 +39,7 @@ for pen in vert_turtles:
     vy.append(ypos)
     vx.append(300)
     ypos += 50
-
+# Traffic simulation
 turncount = 50
 while True:
     for i in range(len(horiz_turtles)):
@@ -71,8 +70,7 @@ while True:
 
     turncount -= 1
     if not vert_turtles or not horiz_turtles or turncount <= 0: break
-    
 
-       
+     
 wn = trtl.Screen()
 wn.mainloop()
