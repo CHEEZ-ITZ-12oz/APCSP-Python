@@ -41,12 +41,10 @@ def clock():
         spot.hideturtle()
         pen.clear()
         pentime.clear()
-        pen.write(f"Game over. You Scored {clickCount} points!", False, "Center", ("Comic Sans MS", 30, "normal"))
-        pentime.goto(0,-150)
-        pentime.write("Click to play again.", False, "Center", ("Comic Sans MS", 30, "normal")) 
-        start.showturtle()
+        pen.write(f"Game over. You Scored {clickCount} points!", False, "Center", ("Comic Sans MS", 30, "normal")) 
         insertScore(clickCount)
         printScores()
+        wn.ontimer(waitBeforeShowingTheResetButton,1000)
 def spotRandDisplay():
     if random.randint(0,5) == 1: spot.shape(alonzo)
     else: spot.shape("circle")
@@ -65,7 +63,11 @@ def spotClick(x,y):
         updateDisplay(pen)
         spotRandDisplay()
         if trtlsize < 10: spot.shapesize(trtlsize+0.5)
-        spot.goto(random.randint(-350,350),random.randint(-275,275)) 
+        spot.goto(random.randint(-350,350),random.randint(-275,275))
+def waitBeforeShowingTheResetButton():
+    pentime.goto(0,-150)
+    pentime.write("Click to play again.", False, "Center", ("Comic Sans MS", 30, "normal"))
+    start.showturtle()
 def startgame(x,y):
     global clickCount
     global timer 
