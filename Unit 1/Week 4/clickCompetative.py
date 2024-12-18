@@ -2,9 +2,21 @@ import turtle as trtl
 import random
 #setup ...............
 name = input("Enter Name: ") # this is here to ask the user before making a screen
-alonzo = "assets/alonzo.gif"
-wn = trtl.Screen()
-wn.addshape(alonzo)
+#Safely initialize. Error if missing files
+try:
+    alonzo = "assets/alonzo.gif"
+    wn = trtl.Screen()
+    wn.addshape(alonzo)
+except:
+    print(f"\nCould not find assets/alonzo.gif\nPlease make sure the file is in the right place and try again.\n")
+    exit()
+#check for leaderboard while we are here
+try:
+    with open("assets/leaderboard.txt","r") as file1:
+        reading = file1
+except:
+    print(f"\nCould not find assets/leaderboard.txt\nPlease make sure the file is in the right place and try again.\n")
+    exit()
 spot = trtl.Turtle(shape="circle")
 pen = trtl.Turtle()
 pentime = trtl.Turtle()
@@ -86,8 +98,7 @@ def startgame(x,y):
     clock()
     rndcycle()  
 # functions - Highscore ...................
-def getScore(line):
-    return(highScores[line][2]) 
+def getScore(line): return(highScores[line][2]) 
 def filterName(rawName):
     rawName = rawName.strip()
     rawName = rawName.replace(" ","//space!//")
@@ -126,12 +137,10 @@ def insertScore(value):
             trscore.goto(0,-300)
             trscore.write("You Placed in the Leaderboard!", False, "Center", ("Comic Sans MS", 30, "normal"))
             highScores.insert(i,[i+1, name, str(value)])
-            if len(highScores) > 5:
-                highScores.pop()
+            if len(highScores) > 5: highScores.pop()
             index = 1
             for line in highScores:
                 line[0]= str(index)
-                #line = f"{line[0]}, {line[1]}, {line[2]}"
                 index += 1
             saveScore()
             break
@@ -159,4 +168,3 @@ trscore.speed(0)
 trscore.color("dimgray")
 print("Your Game is Running")
 wn.mainloop()
-
