@@ -22,13 +22,14 @@ def printScores():
         trscore.write(f"{line[0]}:  {line[1]} - Score: {line[2]}", font=("Comic Sans MS", 15, "normal"))
         ycor -= 30
 def updateDisplay(drpen):
-    drpen.clear()
-    if drpen == pentime:
-        drpen.goto(0,-300)
-        drpen.write(f"Time: {timer}", False, "Center", ("Comic Sans MS", 30, "normal"))
-    elif drpen == pen:
-        drpen.goto(0,300)
-        drpen.write(f"Score: {clickCount}", False, "Center", ("Comic Sans MS", 30, "normal"))
+    if timer > 0:
+        drpen.clear()
+        if drpen == pentime:
+            drpen.goto(0,-300)
+            drpen.write(f"Time: {timer}", False, "Center", ("Comic Sans MS", 30, "normal"))
+        elif drpen == pen:
+            drpen.goto(0,300)
+            drpen.write(f"Score: {clickCount}", False, "Center", ("Comic Sans MS", 30, "normal"))
 # functions - GameLoop ...................
 def clock():
     global timer
@@ -45,9 +46,11 @@ def clock():
         insertScore(clickCount)
         printScores()
         wn.ontimer(waitBeforeShowingTheResetButton,1000)
-def spotRandDisplay():
-    if random.randint(0,5) == 1: spot.shape(alonzo)
-    else: spot.shape("circle")
+def spotRandDisplay(): # Removed cause Alonzo is Funnier
+    if True: #random.randint(0,5) == 1: 
+        spot.shape(alonzo)
+    # else: # Never
+    #     spot.shape("circle")
     spot.onclick(spotClick)
 def rndcycle():
     global timer
@@ -84,12 +87,24 @@ def startgame(x,y):
     rndcycle()  
 # functions - Highscore ...................
 def getScore(line):
-    return(highScores[line][2])  
+    return(highScores[line][2]) 
+def filterName(rawName):
+    rawName = rawName.strip()
+    rawName = rawName.replace(" ","//space!//")
+    rawName = rawName.replace(",","//comma!//")
+    return(rawName)
+def unfilterName(filName):
+    filName = filName.replace("//space!//"," ")
+    filName = filName.replace("//comma!//",",")
+    return(filName)
 def saveScore():
     with open ("assets/leaderboard.txt","w") as file1:
         for i in range(len(highScores)):
             line = highScores[i]
-            line = f"{line[0]}, {line[1]}, {line[2]}"
+            nameFilter = line[1]
+            nameFilter.strip()
+            nameFilter = filterName(nameFilter)
+            line = f"{line[0]}, {nameFilter}, {line[2]}"
             line = line.replace(" ","")
             line = line.replace(",",", ")
             file1.write(f"{line}\n")
@@ -100,12 +115,14 @@ def getHighScores():
         for line in file1:
             line = line.strip()
             tmplist = line.split(",")
-            highScores.append([tmplist[0], tmplist[1], tmplist[2]])
+            insertName = tmplist[1]
+            insertName = unfilterName(insertName)
+            highScores.append([tmplist[0], insertName, tmplist[2]])
 def insertScore(value):
     global highScores
     for i in range(len(highScores)):
         score = int(getScore(i))
-        if value >= score:
+        if value >=  score:
             trscore.goto(0,-300)
             trscore.write("You Placed in the Leaderboard!", False, "Center", ("Comic Sans MS", 30, "normal"))
             highScores.insert(i,[i+1, name, str(value)])
