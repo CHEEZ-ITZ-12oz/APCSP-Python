@@ -22,6 +22,7 @@ pen = trtl.Turtle()
 pentime = trtl.Turtle()
 start = trtl.Turtle(shape="circle")
 trscore = trtl.Turtle()
+badtrtl = trtl.Turtle(shape="circle")
 clickCount = 0
 timer = 0
 highScores = []
@@ -43,6 +44,9 @@ def updateDisplay(drpen):
             drpen.goto(0,300)
             drpen.write(f"Score: {clickCount}", False, "Center", ("Comic Sans MS", 30, "normal"))
 # functions - GameLoop ...................
+def clickCheck():
+    spot.onclick(spotClick)
+    badtrtl.onclick(negClick)
 def clock():
     global timer
     updateDisplay(pentime)
@@ -52,23 +56,25 @@ def clock():
     if timer > 0: wn.ontimer(clock,1000)
     else: #Reset Game
         spot.hideturtle()
+        badtrtl.hideturtle()
         pen.clear()
         pentime.clear()
+        pen.goto(0,325)
         pen.write(f"Game over. You Scored {clickCount} points!", False, "Center", ("Comic Sans MS", 30, "normal")) 
         insertScore(clickCount)
         printScores()
         wn.ontimer(waitBeforeShowingTheResetButton,1000)
-def spotRandDisplay(): # Removed cause Alonzo is Funnier
-    if True: #random.randint(0,5) == 1: 
-        spot.shape(alonzo)
-    # else: # Never
-    #     spot.shape("circle")
-    spot.onclick(spotClick)
 def rndcycle():
     global timer
-    spotRandDisplay()
+    clickCheck()
+    spot.shape(alonzo)
     spot.goto(random.randint(-350,350),random.randint(-275,275))
     if timer >0: wn.ontimer(rndcycle,random.randint(100,2000))
+def rn2cycle():
+    global timer
+    clickCheck()
+    badtrtl.goto(random.randint(-350,350),random.randint(-275,275))
+    if timer >0: wn.ontimer(rn2cycle,random.randint(1000,4000))
 def spotClick(x,y):
     global clickCount
     global timer
@@ -76,9 +82,10 @@ def spotClick(x,y):
         clickCount += 1
         trtlsize = spot.turtlesize()[0]
         updateDisplay(pen)
-        spotRandDisplay()
+        spot.shape(alonzo)
         if trtlsize < 10: spot.shapesize(trtlsize+0.5)
         spot.goto(random.randint(-350,350),random.randint(-275,275))
+        if random.randint(1,2) == 1: badtrtl.goto(random.randint(-350,350),random.randint(-275,275))
 def waitBeforeShowingTheResetButton():
     pentime.goto(0,-150)
     pentime.write("Click to play again.", False, "Center", ("Comic Sans MS", 30, "normal"))
@@ -87,16 +94,30 @@ def startgame(x,y):
     global clickCount
     global timer 
     clickCount = 0
-    timer = 5
+    timer = 10
     start.hideturtle()
     spot.showturtle()
     spot.turtlesize(5)
+    badtrtl.showturtle()
     pen.clear()
     trscore.clear()
     spot.onclick(spotClick)
+    badtrtl.onclick(negClick)
+    badtrtl.speed(0)
+    badtrtl.goto(0,-1000)
+    badtrtl.speed(10)
+    pen.goto(0,300)
     getHighScores()
     clock()
-    rndcycle()  
+    rndcycle()
+    rn2cycle()
+    badtrtl.goto(random.randint(-350,350),random.randint(-275,275))
+def negClick(x,y):
+    global timer
+    if timer > 0:
+        timer -= 1
+        updateDisplay(pentime)
+        badtrtl.goto(random.randint(-350,350),random.randint(-275,275))
 # functions - Highscore ...................
 def getScore(line): return(highScores[line][2]) 
 def filterName(rawName):
@@ -145,7 +166,9 @@ def insertScore(value):
             saveScore()
             break
 #innitialize ...................
+wn.bgcolor(0.9,1,0.95)
 start.onclick(startgame)
+start.color("lime")
 start.shapesize(8)
 spot.shapesize(5)
 spot.hideturtle()
@@ -166,5 +189,13 @@ trscore.hideturtle()
 trscore.penup()
 trscore.speed(0)
 trscore.color("dimgray")
+badtrtl.shapesize(6)
+badtrtl.color("red")
+badtrtl.hideturtle()
+badtrtl.penup()
+badtrtl.speed(0)
+badtrtl.goto(0,-1000)
+badtrtl.speed(10)
+badtrtl.onclick(negClick)
 print("Your Game is Running")
 wn.mainloop()
