@@ -5,6 +5,7 @@ import random
 apple = trtl.Turtle()
 printer = trtl.Turtle()
 orderer = trtl.Turtle()
+leaderboarder = trtl.Turtle()
 wn = trtl.Screen()
 # setting default values.........
 def_appleY = 290
@@ -21,6 +22,8 @@ appleCatchCount = 0
 appleskin = "assets/Apple/Appel.gif"
 wn.addshape(appleskin)
 highScores = []
+untilDone = False
+playername = ":3"
 # funcitons ...............
 def donothing():
     1+1
@@ -79,9 +82,11 @@ def resetGame():
     appleY = def_appleY
     appleDelay = def_appleDelay
     appleCatchCount = 0
+    untilDone = False
     apple.clear()
     orderer.clear()
     printer.clear()
+    printer.sety(0)
     printer.write(f"Press 'Enter' to start.\n\nPress 'h' to play in Hard Mode.",False,"center",("Arial",30,"bold"))
     wn.onkeypress(gameStart,"Return")
     wn.onkeypress(hardtrigger,"h")
@@ -104,8 +109,30 @@ def saveLeaderboard():
             line = f"{line[0]},{line[1]},{line[2]}"
             file1.write(f"{line}\n")
 
+
+def nameprinter(letter):
+    donothing()
+
 def callGetName():
-    return(":3")
+    global untilDone
+    leaderboarder.color("green")
+    leaderboarder.write("You Placed in the leaderboard!",False,"center",("Arial",20,"bold"))
+    leaderboarder.sety(-100)
+    
+    
+    for letter in lettersplus:
+        wn.onkeypress(lambda let=letter:nameprinter(let),letter)
+    untilDone = False
+    
+    while untilDone:
+
+
+
+
+
+
+
+        return(">:3c")
 
 def grabScore(line):
     return(highScores[line][2]) 
@@ -117,12 +144,12 @@ def callLeaderboardSave(score):
         highScores = [["1",callGetName(),str(score)]]
         saveLeaderboard()
     else:
-        for i in range(len(highScores)-1,-1,-1):
-            playerScore = int(grabScore(i))
+        for i in range(len(highScores),0,-1):
+            playerScore = int(grabScore(i-1))
             if score > playerScore:
                 foundPlace = True
-                highScores.insert(i-1,str(i),callGetName(),str(score))
-                highScores.pop()
+                highScores.insert(i-1,[str(i),callGetName(),str(score)])
+                if len(highScores) > 5: highScores.pop()
                 index = 1
                 for line in highScores:
                     line[0] = str(index)
@@ -130,7 +157,8 @@ def callLeaderboardSave(score):
                 saveLeaderboard()
                 break
         if len(highScores) < 5 and not foundPlace:
-            highScores.append(str(len(highScores)+1),callGetName(),int(score))
+            highScores.append([str(len(highScores)+1),callGetName(),int(score)])
+            saveLeaderboard()
 
 
 
@@ -155,7 +183,8 @@ def gameStart():
     orderer.clear()
     callLeaderboardSave(appleCatchCount)
     orderer.write("Game Over",False,"center",("Arial",24,"bold"))
-    printer.write(f"You Scored {appleCatchCount}/{def_appleCount}\n\nAccuracy: {(appleCatchCount/def_appleCount)*100}%\n\nPress 'Enter' to play again.\n\nPress 'Escape' to quit.",False,"center",("Arial",24,"bold"))
+    printer.sety(100)
+    printer.write(f"You Scored {appleCatchCount}/{def_appleCount}\nAccuracy: {(appleCatchCount/def_appleCount)*100}%\nPress 'Enter' to play again.\nPress 'Escape' to quit.",False,"center",("Arial",24,"bold"))
     wn.onkeypress(resetGame,"Return")
     wn.onkeypress(killGame,"Escape")
     wn.listen()
@@ -200,6 +229,9 @@ apple.hideturtle()
 
 printer.penup()
 printer.hideturtle()
+
+leaderboarder.penup()
+leaderboarder.hideturtle()
 
 printer.write(f"Press 'Enter' to start.\n\nPress 'h' to play in Hard Mode.",False,"center",("Arial",30,"bold"))
 
