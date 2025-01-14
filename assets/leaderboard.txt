@@ -1,5 +1,0 @@
-1, John//space!//Clicking-Game, 8798198763
-2, Alonzo, 6
-3, Joe, 6
-4, Gobo, 6
-5, Alonzo, 6
