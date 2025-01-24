@@ -8,6 +8,7 @@ wn = trtl.Screen()
 isEncoding = True
 isCaesar = True
 stopped = False
+stopped2_electricboogaloo = False
 
 allLetters = list(string.printable) + ["Return","BackSpace","space"]
 lettersBlacklist = ['\t','\n','\r','\x0b','\x0c']
@@ -22,7 +23,10 @@ textstring = ""
 # functions ............................
 modetxt = {True: "encode", False: "decode"}
 typetxt = {True: "Caesar", False: "Monoalphabetic"}
-
+def donothingdawg():
+    pass
+def byebye():
+    wn.bye()
 def fixAlphabet():
     global alphabet
     alphabet = list(string.ascii_lowercase)
@@ -110,37 +114,79 @@ def penWriteOptions(question,op1,op2):
     pen.goto(200,-150)
     pen.write(op2,False,"center",("Arial", 20, "bold"))
 
+
+def encode_decode():
+    global stopped2_electricboogaloo, cypherbet, userkey, textstring, theUpper_case, result
+    stopped2_electricboogaloo = True
+    pen.clear()
+    for letter in allLetters:
+        wn.onkeypress(donothingdawg,letter)
+    wn.listen()
+
+    if isCaesar:
+        cypherbet = caesarShift(userkey)
+    else:
+        cypherbet = monoAlphabet(userkey)
+
+    theUpper_case = getCase(textstring)
+
+    if isEncoding:
+        encode(textstring,cypherbet,theUpper_case)
+    else:
+        decode(textstring,cypherbet,theUpper_case)
+    
+    pen.clear()
+    pen.goto(0,0)
+    pen.write(f"{typetxt.get(isCaesar)} {modetxt.get(isEncoding)}d text:\n{result}",False,"center",("Arial", 20, "bold"))
+    with open ("assets/code/output.txt","w") as file1:
+        file1.write(result)
+    pen.goto(0,-200)
+    pen.write(f"Text saved to\nassets/code/output.txt",False,"center",("Arial", 18, "normal"))
+    pen.goto(-300,300)
+    pen.write(f"press ESC to exit",font=("Arial", 12, "italic"))
+    wn.onkeypress(byebye,"Escape")
+    wn.listen()
+    
 def enterUserKey(let):
-    global userinput, userkey, isCaesar
+    global userinput, userkey, isCaesar, stopped2_electricboogaloo
     alttext = False
     pen.clear()
-    if let == "Return":
-        try:
-            int(userinput)
-            if isCaesar:
-                userkey = int(userinput)
-            else:
-                alttext = True
-                userinput = ""
-        except:
-            if not isCaesar and monoReqs(userinput):
-                userkey = userinput
-            else:
-                alttext = True
-                userinput = ""
+    if not stopped2_electricboogaloo:
+        if let == "Return":
+            try:
+                int(userinput)
+                if isCaesar:
+                    userkey = int(userinput)
+                    encode_decode()
+                else:
+                    alttext = True
+                    userinput = ""
+            except:
+                if not isCaesar and monoReqs(userinput):
+                    userkey = userinput
+                    encode_decode()
+                else:
+                    alttext = True
+                    userinput = ""
 
-    elif let == "BackSpace":
-        userinput = userinput[:-1]
-    else:
-        userinput += let
-    if not alttext:
-        pen.goto(0,200)
-        pen.write(f"Enter your key:\nPress Enter to Finish",False,"center",("Arial", 20, "bold"))
-        pen.goto(0,150)
-        pen.write(userinput,False,"center",("Arial", 15, "normal"))
-    else:
-        pen.goto(0,200)
-        pen.write(f"Invalid Key. Try again.",False,"center",("Arial", 20, "bold"))
+        elif let == "BackSpace":
+            userinput = userinput[:-1]
+        else:
+            userinput += let
+    if not stopped2_electricboogaloo:
+        if not alttext:
+            pen.goto(0,200)
+            pen.write(f"Enter your {typetxt.get(isCaesar)} key:\nPress Enter to Finish",False,"center",("Arial", 20, "bold"))
+            pen.goto(0,150)
+            if userinput == "":
+                pen.write("Type here:",False,"center",("Arial", 12, "italic"))
+            else:
+                pen.write(userinput,False,"center",("Arial", 15, "normal"))
+        else:
+            pen.goto(0,200)
+            pen.write(f"Invalid Key. Try again.",False,"center",("Arial", 20, "bold"))
+            pen.goto(0,150)
+            pen.write("Type here:",False,"center",("Arial", 12, "italic"))
     alttext = False
     wn.listen()
 
@@ -155,7 +201,9 @@ def triggerKeyInput():
     stopped = True
     pen.clear()
     pen.goto(0,200)
-    pen.write(f"Enter your key:\nPress Enter to Finish",False,"center",("Arial", 20, "bold"))
+    pen.write(f"Enter your {typetxt.get(isCaesar)} key:\nPress Enter to Finish",False,"center",("Arial", 20, "bold"))
+    pen.goto(0,150)
+    pen.write("Type here:",False,"center",("Arial", 12, "italic"))
     alphabet2 = alphabet + ["Return","BackSpace"] + numbers
     for letter in alphabet2:
         wn.onkeypress(lambda let=letter:enterUserKey(let),letter)
@@ -169,7 +217,13 @@ def enterUsertext(let):
     if not stopped and not let in lettersBlacklist:
         pen.clear()
         if let == "Return":
-            textstring = userinput
+            try: # if file
+                with open(userinput,"r") as file1:
+                    for line in file1:
+                        textstring = line
+                        break
+            except: # if text
+                textstring = userinput
             stopped = True
             triggerKeyInput()
         elif let == "BackSpace":
@@ -182,7 +236,10 @@ def enterUsertext(let):
             pen.goto(0,200)
             pen.write(f"Enter text to {modetxt.get(isEncoding)}:\nPress Enter to Finish",False,"center",("Arial", 20, "bold"))
             pen.goto(0,150)
-            pen.write(userinput,False,"center",("Arial", 15, "normal"))
+            if userinput == "":
+                pen.write("Type here:",False,"center",("Arial", 12, "italic"))
+            else:
+                pen.write(userinput,False,"center",("Arial", 15, "normal"))
             wn.listen()
 
 
@@ -194,6 +251,8 @@ def enablekeyboard():
     pen.clear()
     pen.goto(0,200)
     pen.write(f"Enter text to {modetxt.get(isEncoding)}:\nPress Enter to Finish",False,"center",("Arial", 20, "bold"))
+    pen.goto(0,150)
+    pen.write("Type here:",False,"center",("Arial", 12, "italic"))
     for letter in allLetters:
         wn.onkeypress(lambda let=letter:enterUsertext(let),letter)
     wn.listen()
