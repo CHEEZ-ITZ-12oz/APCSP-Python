@@ -23,10 +23,13 @@ textstring = ""
 # functions ............................
 modetxt = {True: "encode", False: "decode"}
 typetxt = {True: "Caesar", False: "Monoalphabetic"}
+
 def donothingdawg():
     pass
+
 def byebye():
     wn.bye()
+
 def fixAlphabet():
     global alphabet
     alphabet = list(string.ascii_lowercase)
@@ -37,6 +40,7 @@ def caesarShift(value):
         shifted.append(shifted.pop(0))
     fixAlphabet()
     return(shifted)
+
 def monoAlphabet(key):
     monolist = list(key)
     reversedAlpha = alphabet[::-1]
@@ -45,6 +49,7 @@ def monoAlphabet(key):
             monolist.append(letter)
     fixAlphabet()
     return(monolist)
+
 def getCase(message):
     messageList = list(message)
     caselist = []
@@ -53,12 +58,14 @@ def getCase(message):
             caselist.append(True)
         else: caselist.append(False)
     return(caselist)
+
 def monoReqs(key):
     keylist = list(key)
     for letter in keylist:
         if keylist.count(letter) > 1:
             return(False)
     return(True)
+
 def encode(usertext,alpha,caseread):
     global result
     usertext = usertext.lower()
@@ -114,7 +121,6 @@ def penWriteOptions(question,op1,op2):
     pen.goto(200,-150)
     pen.write(op2,False,"center",("Arial", 20, "bold"))
 
-
 def encode_decode():
     global stopped2_electricboogaloo, cypherbet, userkey, textstring, theUpper_case, result
     stopped2_electricboogaloo = True
@@ -122,19 +128,15 @@ def encode_decode():
     for letter in allLetters:
         wn.onkeypress(donothingdawg,letter)
     wn.listen()
-
     if isCaesar:
         cypherbet = caesarShift(userkey)
     else:
         cypherbet = monoAlphabet(userkey)
-
     theUpper_case = getCase(textstring)
-
     if isEncoding:
         encode(textstring,cypherbet,theUpper_case)
     else:
         decode(textstring,cypherbet,theUpper_case)
-    
     pen.clear()
     pen.goto(0,0)
     pen.write(f"{typetxt.get(isCaesar)} {modetxt.get(isEncoding)}d text:\n{result}",False,"center",("Arial", 20, "bold"))
@@ -190,11 +192,6 @@ def enterUserKey(let):
     alttext = False
     wn.listen()
 
-
-
-
-
-
 def triggerKeyInput():
     global stopped, userinput
     userinput = ""
@@ -208,9 +205,6 @@ def triggerKeyInput():
     for letter in alphabet2:
         wn.onkeypress(lambda let=letter:enterUserKey(let),letter)
     wn.listen()
-
-
-
 
 def enterUsertext(let):
     global userinput, isCaesar, stopped, textstring
@@ -242,9 +236,6 @@ def enterUsertext(let):
                 pen.write(userinput,False,"center",("Arial", 15, "normal"))
             wn.listen()
 
-
-
-
 def enablekeyboard():
     bt1.hideturtle()
     bt2.hideturtle()
@@ -257,19 +248,15 @@ def enablekeyboard():
         wn.onkeypress(lambda let=letter:enterUsertext(let),letter)
     wn.listen()
 
-
-
 def triggerCaeser(x,y):
     global isCaesar
     isCaesar = True
     enablekeyboard()
+
 def triggerMono(x,y):
     global isCaesar
     isCaesar = False
     enablekeyboard()
-
-
-
 
 def triggerEncode(x,y):
     global isEncoding
@@ -292,7 +279,6 @@ bt1.speed(0)
 bt1.shapesize(7)
 bt1.goto(-200,0)
 
-
 bt2.penup()
 bt2.speed(0)
 bt2.shapesize(7)
@@ -305,57 +291,5 @@ penWriteOptions(f"Encode or Decode?",f"Click to\nEncode",f"Click to\nDecode")
 
 bt1.onclick(triggerEncode)
 bt2.onclick(triggerDecode)
-"""
 
-while True: # Encode/Decode
-    userinput = input(f"Encode (e) or Decode (d) ?: ")
-    if userinput == "e": 
-        isEncoding = True
-        break
-    elif userinput == "d":
-        isEncoding = False
-        break
-while True: # Caesar/Monoalphabetic
-    userinput = input(f"Which algorithm would you like to use to {modetxt.get(isEncoding)}? Caesar (c) or Monoalphabetic (m)?: ")
-    if userinput == "c": 
-        isCaesar = True
-        break
-    elif userinput == "m":
-        isCaesar = False
-        break
-userinput = input(f"Enter text or enter filepath to {modetxt.get(isEncoding)}: ")
-try: # if file
-    with open(userinput,"r") as file1:
-        for line in file1:
-            textstring = line
-            break
-except: # if text
-    textstring = userinput
-
-print(textstring)
-
-while True: # Get Key
-    userinput = input(f"Enter your key: ")
-    try:
-        int(userinput)
-        if isCaesar:
-            userkey = int(userinput)
-            break
-    except:
-        if not isCaesar and monoReqs(userinput):
-            userkey = userinput
-            break
-    print("Not a valid key")
-
-
-if isCaesar: cypherbet = caesarShift(userkey)
-else: cypherbet = monoAlphabet(userkey)
-
-theUpper_case = getCase(textstring)
-
-if isEncoding: encode(textstring,cypherbet,theUpper_case)
-else: decode(textstring,cypherbet,theUpper_case)
-
-print(result)
-"""
 wn.mainloop()
