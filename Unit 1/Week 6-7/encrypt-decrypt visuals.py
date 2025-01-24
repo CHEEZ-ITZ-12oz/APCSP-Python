@@ -140,10 +140,15 @@ def encode_decode():
     pen.clear()
     pen.goto(0,0)
     pen.write(f"{typetxt.get(isCaesar)} {modetxt.get(isEncoding)}d text:\n{result}",False,"center",("Arial", 20, "bold"))
-    with open ("assets/code/output.txt","w") as file1:
-        file1.write(result)
-    pen.goto(0,-200)
-    pen.write(f"Text saved to\nassets/code/output.txt",False,"center",("Arial", 18, "normal"))
+    try:
+        with open ("assets/code/output.txt","w") as file1:
+            file1.write(result)
+    except:
+        pen.goto(0,-200)
+        pen.write(f"Could not save to\nassets/code/output.txt",False,"center",("Arial", 18, "normal"))
+    else:
+        pen.goto(0,-200)
+        pen.write(f"Text saved to\nassets/code/output.txt",False,"center",("Arial", 18, "normal"))
     pen.goto(-300,300)
     pen.write(f"press ESC to exit",font=("Arial", 12, "italic"))
     wn.onkeypress(byebye,"Escape")
