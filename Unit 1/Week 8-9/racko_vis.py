@@ -73,6 +73,8 @@ def getInput(question,cond,Inputs=INPUTdefault,display=False):
 # functions ..............
 def donothing():
     1+1==2
+def exitgame():
+    wn.bye()
 
 def display(plr):
     pen.goto(0,-200)
@@ -146,6 +148,8 @@ def turn(plr):
         card = discard.pop(0)
         cardInsert(card,plr)
 # main ...................
+wn.onkeypress(exitgame,"Escape")        
+
 pen.penup()
 pen.speed(0)
 pen.hideturtle()
