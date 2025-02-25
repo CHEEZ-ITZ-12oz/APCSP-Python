@@ -168,7 +168,6 @@ def convertToHex(bas2): # bin to hex
         numlist.append(int(char))
     while len(numlist) % 4 != 0:
         numlist.append(0)
-    numlist.reverse()
     numlist2 = []
     for i in range(0,len(numlist),4):
         val = ""
