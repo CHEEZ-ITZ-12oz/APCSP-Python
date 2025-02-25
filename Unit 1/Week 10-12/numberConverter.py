@@ -1,7 +1,7 @@
 import turtle as trtl
 pen = trtl.Turtle()
 wn = trtl.Screen()
-
+reset = trtl.Turtle(shape="circle")
 btrtl = []
 for i in range(6):
     temp = trtl.Turtle(shape="circle")
@@ -22,10 +22,6 @@ dechex = {10: "a",
           13: "d",
           14: "e",
           15: "f"}
-
-
-
-
 
 def enterUserText(let,message,valids):
     global stopped, answer, userinput
@@ -60,7 +56,6 @@ def enterUserText(let,message,valids):
     alttext = False
     wn.listen()
 
-
 def getInput(question,cond,Inputs=[]):
     global stopped, userinput
     stopped = False
@@ -80,51 +75,64 @@ def getInput(question,cond,Inputs=[]):
     pen.clear()
     return answer
 
+def printresult(text,type):
+    pen.clear()
+    pen.goto(0,200)
+    pen.write(f"Number in {type}: {text}",False,"center",("Arial", 25, "bold"))
+    pen.goto(0,-100)
+    pen.write("Reset",False,"center",("Arial", 15, "normal"))
+    reset.showturtle()
 
 def hidebuttons():
     pen.clear()
+    reset.hideturtle()
     for button in btrtl:
         button.clear()
         button.onclick(None)
         button.hideturtle()
 
-
 def bt1(x,y): # 2 - 10
     hidebuttons()
     number = getInput(f"Enter number in Binary",[],["1","0","BackSpace","Return"])
     total = convertToDecimal(number,2)
-    print(total)
+    printresult(total,"Decimal")
 
 
 def bt2(x,y): # 10 - 16
+    hidebuttons()
+    number = getInput(f"Enter number in Decimal",[],["0","1","2","3","4","5","6","7","8","9","BackSpace","Return"])
+    binary = convertToBinary(number)
+    total = convertToHex(binary)
+    printresult(total,"Hexadecimal")
+
+def bt3(x,y): # 16 - 2
     hidebuttons()
     number = getInput(f"Enter number in Hexadecimal",[],["0","1","2","3","4","5","6","7","8","9",
                                                              "a","b","c","d","e","f","BackSpace","Return"])
     dec = convertToDecimal(number,16)
     total = convertToBinary(dec)
-    print(total)
-
-def bt3(x,y): # 16 - 2
-    hidebuttons()
+    printresult(total,"Binary")
 
 def bt4(x,y): # 10 - 2
     hidebuttons()
     number = getInput(f"Enter number in Decimal",[],["0","1","2","3","4","5","6","7","8","9","BackSpace","Return"])
     total = convertToBinary(number)
-    print(total)
+    printresult(total,"Binary")
 
 def bt5(x,y): # 16 - 10
     hidebuttons()
     number = getInput(f"Enter number in Hexadecimal",[],["0","1","2","3","4","5","6","7","8","9",
                                                              "a","b","c","d","e","f","BackSpace","Return"])
     total = convertToDecimal(number,16)
-    print(total)
+    printresult(total,"Decimal")
 
 def bt6(x,y): # 2 - 16
     hidebuttons()
-    print(6)
+    number = getInput(f"Enter number in Binary",[],["1","0","BackSpace","Return"])
+    total = convertToHex(number)
+    printresult(total,"Hexadecimal")
 
-def convertToDecimal(number,base):
+def convertToDecimal(number,base): # global
     number = str(number)
     numlist = []
     for char in number:
@@ -138,30 +146,22 @@ def convertToDecimal(number,base):
         total += numlist[i]*(base**i)
     return total
 
-def convertToBinary(dec):
+def convertToBinary(dec): # dec to bin
     dec = int(dec)
-    highest = 1
-    baselist = [1]
-    while dec >= highest and dec != 0:
-        highest *= 2
-        baselist.append(highest)
-    val = dec
-    baselist.reverse()
-    print(baselist)
-    for i in range(len(baselist)):
-        if val >= baselist[i]:
-            val -= baselist[i]
-            baselist[i] = "1"
-        else:
-            baselist[i] = "0"
-    print(baselist)
-    total = ""
-    for num in baselist:
-        total += num
-    total = int(total)
-    return total
+    num = dec
+    numlist = []
+    while num > 0:
+        remainder = num % 2
+        numlist.append(remainder)
+        num //= 2
+    numlist.reverse()
+    answer=""
+    for val in numlist:
+        answer += str(val)
+    return int(answer)
+
         
-def convertToHex(bas2):
+def convertToHex(bas2): # bin to hex
     bas2 = str(bas2)
     numlist = []
     for char in bas2:
@@ -172,31 +172,38 @@ def convertToHex(bas2):
     numlist2 = []
     for i in range(0,len(numlist),4):
         val = ""
-        for num in numlist[i:i+3]:
-            val += num
-        val = int(val)
-        val = convertToDecimal(val,2)
-        numlist2.append(val)
-    
+        numstr = ""
+        for num in numlist[i:i+4]:
+            numstr += str(num)
+        val = int(convertToDecimal(numstr,2))
+        numlist2.append(dechex.get(val,str(val)))
+    answer = ""
+    for place in numlist2:
+        answer += place
+    return answer
 
-
-
-
+def initialize(x,y):
+    hidebuttons()
+    pen.goto(0,250)
+    pen.write(f"Select Conversion",False,"center",("Arial", 20, "bold"))
+    texts = ["Binary to Decimal","Decimal to Hexadecimal","Hexadecimal to Binary","Decimal to Binary","Hexadecimal to Decimal","Binary to Hexadecimal"]
+    location = [(-300,150),(0,150),(300,150),(-300,-150),(0,-150),(300,-150)]
+    procedures = [bt1,bt2,bt3,bt4,bt5,bt6]
+    for i in range(6):
+        btrtl[i].showturtle()
+        btrtl[i].goto(location[i])
+        btrtl[i].sety(btrtl[i].ycor()-120)
+        btrtl[i].write(texts[i],False,"center",("Arial", 15, "normal"))
+        btrtl[i].goto(location[i])
+        btrtl[i].onclick(procedures[i])
 
 pen.speed(0)
 pen.penup()
 pen.hideturtle()
-pen.goto(0,250)
-pen.write(f"Select Conversion",False,"center",("Arial", 20, "bold"))
-texts = ["Binary to Decimal","Decimal to Hexadecimal","Hexadecimal to Binary","Decimal to Binary","Hexadecimal to Decimal","Binary to Hexadecimal"]
-location = [(-300,150),(0,150),(300,150),(-300,-150),(0,-150),(300,-150)]
-procedures = [bt1,bt2,bt3,bt4,bt5,bt6]
-for i in range(6):
-    btrtl[i].goto(location[i])
-    btrtl[i].sety(btrtl[i].ycor()-120)
-    btrtl[i].write(texts[i],False,"center",("Arial", 15, "normal"))
-    btrtl[i].goto(location[i])
-    btrtl[i].onclick(procedures[i])
 
+reset.hideturtle()
+reset.shapesize(6)
+reset.onclick(initialize)
+initialize(1,1)
 
 wn.mainloop()
