@@ -4,6 +4,8 @@ from PIL import Image
 sys.setrecursionlimit(100000)
 
 wn = trtl.Screen()
+trtl.tracer(0)
+
 c = "assets/mine"
 wn.addshape(f"{c}/Reset.gif")
 wn.addshape(f"{c}/Loading.gif")
@@ -32,6 +34,7 @@ reset = trtl.Turtle(shape=f"{c}/Loading.gif")
 
 settings = trtl.Turtle(shape=f"{c}/Loading.gif")
 
+trtl.update()
 
 def resize_convert(image,scale,num):
     img = Image.open(image)
@@ -47,58 +50,59 @@ def resize_convert(image,scale,num):
 def tileresize():
     global tilestate
     tilestate = []
-    for i in range(22):
+    for i in range(15):
         image = f"{c}/{i}.gif"
         temppath = f"{c}/temp/{i}.gif"
         temppath = resize_convert(image,size/15.5,i)
         tilestate.append(temppath)
         wn.addshape(temppath)
-# Closed - 17, Flag - 18, Mine - 19, Wintile - 20, Flagfail - 21
+# Closed - 9, Flag - 10, Mine - 11, Wintile - 12, Flagfail - 13, FailClick - 14
 
 
 
 def gamereset(x,y):
     global GameStarted, mines, dugtiles, isfirstclick
-    trtl.tracer(0)
+    
     pen.clear()
     pen.showturtle()
     GameStarted=False
     for row in board:
         for tile in row:
-            tile.shape(tilestate[17])
+            tile.shape(tilestate[9])
     mines = []
     dugtiles = []
     isfirstclick = True
     pen.hideturtle()
     displayMinecount()
     trtl.update()
-    trtl.tracer(1)
+    
     GameStarted=True
 
-def endgame(iswin):
-    trtl.tracer(0)
+def endgame(iswin,row=0,collumn=0):
+    
     global GameStarted
     if GameStarted:
         GameStarted = False
         if iswin:
             for tile in mines:
-                board[tile[0]][tile[1]].shape(tilestate[20])
+                board[tile[0]][tile[1]].shape(tilestate[12])
             pen.clear()
             pen.write(f"You Win!",False,"center",("Arial",20,"bold"))
         else:
-            for row in board:
-                for tile in row:
-                    if tile.shape() == tilestate[18]:
-                        tile.shape(tilestate[21])
+            for line in board:
+                for tile in line:
+                    if tile.shape() == tilestate[10]:
+                        tile.shape(tilestate[13])
             for tile in mines:
-                if board[tile[0]][tile[1]].shape() == tilestate[21]:    
-                    board[tile[0]][tile[1]].shape(tilestate[18])
+                if board[tile[0]][tile[1]].shape() == tilestate[13]:    
+                    board[tile[0]][tile[1]].shape(tilestate[10])
                 else:
-                    board[tile[0]][tile[1]].shape(tilestate[19])
+                    board[tile[0]][tile[1]].shape(tilestate[11])
+            board[row][collumn].shape(tilestate[14])
             pen.clear()
             pen.write(f"You Lose!",False,"center",("Arial",20,"bold"))
     trtl.update()
-    trtl.tracer(1)
+    
         
          
 def displayMinecount():
@@ -107,7 +111,7 @@ def displayMinecount():
     flagcount=0
     for row in board:
             for tile in row:
-                if tile.shape() == tilestate[18]:
+                if tile.shape() == tilestate[10]:
                     flagcount+=1
     flag_minesRatio = minecount-flagcount
     pen.write(f"Minecount: {flag_minesRatio}/{minecount} mines",False,"center",("Arial",15,"bold"))
@@ -115,7 +119,7 @@ def displayMinecount():
 def checksurrounding(row,collumn):
     if GameStarted:
         if (row,collumn) in mines:
-            endgame(False)
+            endgame(False,row,collumn)
         else:
             numminescheck = 0
             for mine in mines:
@@ -131,6 +135,9 @@ def checksurrounding(row,collumn):
                             (row-1,collumn-1),(row,collumn-1),(row+1,collumn-1)]:
                     if 0 <= tile[0] < height and 0 <= tile[1] < length: #and tile[0] >=0 and tile[1] >= 0:
                         tileclick(0,0,tile[0],tile[1])
+            else: 
+                trtl.update()
+            
             if len(dugtiles) == (length*height-minecount):
                 endgame(True)
 
@@ -139,7 +146,7 @@ def checksurrounding(row,collumn):
 
 def tileclick(x,y,row,collumn):
     global isfirstclick
-    if isfirstclick and GameStarted and board[row][collumn].shape() == tilestate[17]:
+    if isfirstclick and GameStarted and board[row][collumn].shape() == tilestate[9]:
         isfirstclick = False
         if (height*length)-9 <= minecount:
             firstclicksafespots = [(row,collumn)]
@@ -155,18 +162,19 @@ def tileclick(x,y,row,collumn):
                     mines.append((temp1,temp2))
         checksurrounding(row,collumn)
 
-    elif GameStarted and (row,collumn) not in dugtiles and board[row][collumn].shape() == tilestate[17]:
+    elif GameStarted and (row,collumn) not in dugtiles and board[row][collumn].shape() == tilestate[9]:
         checksurrounding(row,collumn)
     
 
 
 def tileflag(x,y,row,collumn):
     if GameStarted:
-        if board[row][collumn].shape() == tilestate[17]:
-            board[row][collumn].shape(tilestate[18])
-        elif board[row][collumn].shape() == tilestate[18]:
-            board[row][collumn].shape(tilestate[17])
+        if board[row][collumn].shape() == tilestate[9]:
+            board[row][collumn].shape(tilestate[10])
+        elif board[row][collumn].shape() == tilestate[10]:
+            board[row][collumn].shape(tilestate[9])
         displayMinecount()
+        trtl.update()
     
 
 def chord(x,y,row,collumn):
@@ -176,7 +184,7 @@ def chord(x,y,row,collumn):
                         (row-1,collumn),(row,collumn),(row+1,collumn),
                         (row-1,collumn-1),(row,collumn-1),(row+1,collumn-1)]:
             if 0 <= space[0] < height and 0 <= space[1] < length:
-                if board[space[0]][space[1]].shape() == tilestate[18]:
+                if board[space[0]][space[1]].shape() == tilestate[10]:
                     flagcounter += 1
         if board[row][collumn].shape() == tilestate[flagcounter]:
             for space in [(row-1,collumn+1),(row,collumn+1),(row+1,collumn+1),
@@ -214,7 +222,7 @@ def changesettings(x,y):
         except:
             pass
     size = 600/length
-    trtl.tracer(0)
+    
     for list in board:
         for tr in list:
             tr.goto(1000,1000)
@@ -238,7 +246,7 @@ def changesettings(x,y):
     board = []
     for sqrow in range(height):
         for square in range(length):
-            temp = trtl.Turtle(shape=tilestate[17])
+            temp = trtl.Turtle(shape=tilestate[9])
             temp.speed(0)
             temp.penup()
             temp.goto((square*size)-(size*(length/2))+(size/2),(sqrow*size)-(size*(height/2))-(size/2))
@@ -254,7 +262,7 @@ def changesettings(x,y):
     pen.hideturtle()
     displayMinecount()
     trtl.update()
-    trtl.tracer(1)
+    
     GameStarted=True
 
 
@@ -265,7 +273,7 @@ def changesettings(x,y):
 
 tileresize()
 
-trtl.tracer(0)
+
 
 pen.speed(0)
 pen.penup()
@@ -286,7 +294,7 @@ tiles = []
 board = []
 for sqrow in range(height):
     for square in range(length):
-        temp = trtl.Turtle(shape=tilestate[17])
+        temp = trtl.Turtle(shape=tilestate[9])
         temp.speed(0)
         temp.penup()
         temp.goto((square*size)-(size*(length/2))+(size/2),(sqrow*size)-(size*(height/2))-(size/2))
@@ -302,7 +310,7 @@ settings.onclick(changesettings)
 pen.hideturtle()
 displayMinecount()
 trtl.update()
-trtl.tracer(1)
+
 GameStarted=True
 
 
