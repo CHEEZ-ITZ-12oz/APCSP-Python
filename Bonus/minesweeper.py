@@ -136,6 +136,7 @@ def checksurrounding(row,collumn,plrclick):
             if numminescheck == 0:
                 for tile in allaround(row,collumn):
                     if 0 <= tile[0] < height and 0 <= tile[1] < length and tile not in dugtiles:
+                        board[tile[0]][tile[1]].shape(tilestate[9])
                         tileclick(0,0,tile[0],tile[1],False)
             if plrclick:
                 trtl.update()    
@@ -187,7 +188,7 @@ def chord(x,y,row,collumn):
         if board[row][collumn].shape() == tilestate[flagcounter]:
             for space in allaround(row,collumn):
                 if 0 <= space[0] < height and 0 <= space[1] < length:
-                    tileclick(0,0,space[0],space[1])
+                    tileclick(0,0,space[0],space[1],True)
     
             
 
@@ -202,7 +203,8 @@ def changesettings(x,y):
         try:
             temp = wn.textinput("Enter width of board","Recommended size: 10")
             length = int(temp)
-            break
+            if length >= 6:
+                break
         except:
             if temp == None:
                 stopper = True
@@ -212,7 +214,7 @@ def changesettings(x,y):
             try:
                 temp = wn.textinput("Enter height of board",f"Must be equal to or smaller than {length}")
                 height = int(temp)
-                if height <= length:
+                if 0 < height <= length:
                     break
             except:
                 if temp == None:
@@ -223,7 +225,8 @@ def changesettings(x,y):
             try:
                 temp = wn.textinput("Enter minecount",f"   Recommended count: {int(length*height*0.2)}   ")
                 minecount = int(temp)
-                break
+                if minecount >= 1:
+                    break
             except:
                 if temp == None:
                     stopper = True
