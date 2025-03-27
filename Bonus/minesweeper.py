@@ -1,17 +1,16 @@
-import turtle as trtl, random, sys
+import turtle as trtl, random, sys, pygame
 from PIL import Image
-
 sys.setrecursionlimit(100000) # this line was taken from stackoverflow - https://stackoverflow.com/questions/3323001/what-is-the-maximum-recursion-depth-and-how-to-increase-it
 
 wn = trtl.Screen()
 trtl.tracer(0)
+pygame.mixer.init()
 
-
-
-c = "assets/mine"
-wn.addshape(f"{c}/Reset.gif")
-wn.addshape(f"{c}/Loading.gif")
-wn.addshape(f"{c}/Shovel.gif")
+a = "assets/mine/audio"
+v = "assets/mine/sprites"
+wn.addshape(f"{v}/Reset.gif")
+wn.addshape(f"{v}/Loading.gif")
+wn.addshape(f"{v}/Shovel.gif")
 GameStarted = False
 isfirstclick = True
 
@@ -19,27 +18,33 @@ isfirstclick = True
 mines = []
 dugtiles = []
 tilestate = []
+numbercount = []
 
 
-minecount = 20
+minecount = 15
 length = 10
 height = 10
 
 size = 600/length
 
-pen = trtl.Turtle(shape=f"{c}/Loading.gif")
+pen = trtl.Turtle(shape=f"{v}/Loading.gif")
 
-reset = trtl.Turtle(shape=f"{c}/Loading.gif")
+reset = trtl.Turtle(shape=f"{v}/Loading.gif")
 
-settings = trtl.Turtle(shape=f"{c}/Loading.gif")
+settings = trtl.Turtle(shape=f"{v}/Loading.gif")
 
 trtl.update()
+
+sounds = []
+for i in range(9):
+    sounds.append(pygame.mixer.Sound(f"{a}/{i}.wav"))
+
 
 def resize_convert(image,scale,num):
     img = Image.open(image)
     size = (int(img.width*scale), int(img.height*scale))
     img = img.resize(size)
-    temppath = f"{c}/temp/{num}.gif"
+    temppath = f"{v}/display/{num}.gif"
     img.save(temppath,"GIF")
     return temppath
 
@@ -48,12 +53,16 @@ def tileresize():
     global tilestate
     tilestate = []
     for i in range(15):
-        image = f"{c}/{i}.gif"
-        temppath = f"{c}/temp/{i}.gif"
+        image = f"{v}/{i}.gif"
         temppath = resize_convert(image,size/15.5,i)
         tilestate.append(temppath)
         wn.addshape(temppath)
 # Closed - 9, Flag - 10, Mine - 11, Wintile - 12, Flagfail - 13, FailClick - 14
+
+def playsounds(ids):
+    for sound in ids:
+        sounds[sound].play()
+    
 
 
 
@@ -123,22 +132,28 @@ def allaround(row,collumn):
 
 
 def checksurrounding(row,collumn,plrclick):
+    global numbercount
     if GameStarted:
         if (row,collumn) in mines:
             endgame(False,row,collumn)
         else:
+            if plrclick:
+                numbercount = [0]
             numminescheck = 0
             for mine in mines:
                 if mine in allaround(row,collumn):
                     numminescheck += 1
             board[row][collumn].shape(tilestate[numminescheck])
             dugtiles.append((row,collumn))
+            if numminescheck not in numbercount:
+                numbercount.append(numminescheck)
             if numminescheck == 0:
                 for tile in allaround(row,collumn):
                     if 0 <= tile[0] < height and 0 <= tile[1] < length and tile not in dugtiles:
                         board[tile[0]][tile[1]].shape(tilestate[9])
                         tileclick(0,0,tile[0],tile[1],False)
             if plrclick:
+                playsounds(numbercount)
                 trtl.update()    
             
             if len(dugtiles) == (length*height-minecount):
@@ -186,9 +201,18 @@ def chord(x,y,row,collumn):
                 if board[space[0]][space[1]].shape() == tilestate[10]:
                     flagcounter += 1
         if board[row][collumn].shape() == tilestate[flagcounter]:
+            lasttile = ""
+            for space in reversed(allaround(row,collumn)):
+                if board[space[0]][space[1]].shape() == tilestate[9] and lasttile != "":
+                    lasttile = space
+                    break
             for space in allaround(row,collumn):
                 if 0 <= space[0] < height and 0 <= space[1] < length:
-                    tileclick(0,0,space[0],space[1],True)
+                    if space == lasttile:
+                        tileclick(0,0,space[0],space[1],True)
+                    else:
+                        tileclick(0,0,space[0],space[1],True)
+
     
             
 
@@ -294,12 +318,12 @@ pen.penup()
 pen.goto(0,350)
 
 reset.speed(0)
-reset.shape(f"{c}/Reset.gif")
+reset.shape(f"{v}/Reset.gif")
 reset.penup()
 reset.goto(-400,-350)
 
 settings.speed(0)
-settings.shape(f"{c}/Shovel.gif")
+settings.shape(f"{v}/Shovel.gif")
 settings.penup()
 settings.goto(400,-350)
 
