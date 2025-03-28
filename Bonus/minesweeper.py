@@ -201,18 +201,10 @@ def chord(x,y,row,collumn):
                 if board[space[0]][space[1]].shape() == tilestate[10]:
                     flagcounter += 1
         if board[row][collumn].shape() == tilestate[flagcounter]:
-            lasttile = ""
-            for space in reversed(allaround(row,collumn)):
-                if board[space[0]][space[1]].shape() == tilestate[9] and lasttile != "":
-                    lasttile = space
-                    break
             for space in allaround(row,collumn):
                 if 0 <= space[0] < height and 0 <= space[1] < length:
-                    if space == lasttile:
-                        tileclick(0,0,space[0],space[1],True)
-                    else:
-                        tileclick(0,0,space[0],space[1],True)
-
+                    tileclick(0,0,space[0],space[1],True)
+                    
     
             
 
