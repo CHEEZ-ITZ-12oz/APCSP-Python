@@ -18,7 +18,7 @@ isfirstclick = True
 mines = []
 dugtiles = []
 tilestate = []
-numbercount = []
+numbercounts = []
 
 
 minecount = 15
@@ -36,8 +36,9 @@ settings = trtl.Turtle(shape=f"{v}/Loading.gif")
 trtl.update()
 
 sounds = []
-for i in range(9):
-    sounds.append(pygame.mixer.Sound(f"{a}/{i}.wav"))
+for soundname in ["0","1","2","3","4","5","6","7","8","flag","gameover","win"]:
+    sounds.append(pygame.mixer.Sound(f"{a}/{soundname}.wav"))
+# 9 - flag, 10 - gameover, 11 - win
 
 
 def resize_convert(image,scale,num):
@@ -90,11 +91,13 @@ def endgame(iswin,row=0,collumn=0):
     if GameStarted:
         GameStarted = False
         if iswin:
+            playsounds([11])
             for tile in mines:
                 board[tile[0]][tile[1]].shape(tilestate[12])
             pen.clear()
             pen.write(f"You Win!",False,"center",("Arial",20,"bold"))
         else:
+            playsounds([10])
             for line in board:
                 for tile in line:
                     if tile.shape() == tilestate[10]:
@@ -132,32 +135,33 @@ def allaround(row,collumn):
 
 
 def checksurrounding(row,collumn,plrclick):
-    global numbercount
+    global numbercounts
     if GameStarted:
         if (row,collumn) in mines:
             endgame(False,row,collumn)
         else:
             if plrclick:
-                numbercount = [0]
+                numbercounts = [0]
             numminescheck = 0
             for mine in mines:
                 if mine in allaround(row,collumn):
                     numminescheck += 1
             board[row][collumn].shape(tilestate[numminescheck])
             dugtiles.append((row,collumn))
-            if numminescheck not in numbercount:
-                numbercount.append(numminescheck)
+            if numminescheck not in numbercounts:
+                numbercounts.append(numminescheck)
             if numminescheck == 0:
                 for tile in allaround(row,collumn):
                     if 0 <= tile[0] < height and 0 <= tile[1] < length and tile not in dugtiles:
                         board[tile[0]][tile[1]].shape(tilestate[9])
                         tileclick(0,0,tile[0],tile[1],False)
-            if plrclick:
-                playsounds(numbercount)
-                trtl.update()    
-            
+
             if len(dugtiles) == (length*height-minecount):
+                trtl.update()
                 endgame(True)
+            elif plrclick:
+                playsounds(numbercounts)
+                trtl.update()  
 
 
 
@@ -186,8 +190,10 @@ def tileclick(x,y,row,collumn,plrclick):
 def tileflag(x,y,row,collumn):
     if GameStarted:
         if board[row][collumn].shape() == tilestate[9]:
+            playsounds([9])
             board[row][collumn].shape(tilestate[10])
         elif board[row][collumn].shape() == tilestate[10]:
+            playsounds([9])
             board[row][collumn].shape(tilestate[9])
         displayMinecount()
         trtl.update()
@@ -206,9 +212,6 @@ def chord(x,y,row,collumn):
                     tileclick(0,0,space[0],space[1],True)
                     
     
-            
-
-
 
 def changesettings(x,y):
     global length,height,minecount,board,size,mines,dugtiles,isfirstclick,GameStarted
