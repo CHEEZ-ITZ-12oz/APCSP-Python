@@ -25,6 +25,7 @@ minecount = 15
 length = 10
 height = 10
 
+prevsize = 0
 size = 600/length
 
 pen = trtl.Turtle(shape=f"{v}/Loading.gif")
@@ -40,8 +41,7 @@ for soundname in ["0","1","2","3","4","5","6","7","8","flag","gameover","win"]:
     sounds.append(pygame.mixer.Sound(f"{a}/{soundname}.wav"))
 # 9 - flag, 10 - gameover, 11 - win
 
-
-def resize_convert(image,scale,num):
+def resize_convert(image,scale,num): # saves a copy of given image, scaled by scale, and returns the new filepath
     img = Image.open(image)
     size = (int(img.width*scale), int(img.height*scale))
     img = img.resize(size)
@@ -49,25 +49,25 @@ def resize_convert(image,scale,num):
     img.save(temppath,"GIF")
     return temppath
 
-
-def tileresize():
+def tileresize(): # resize all the files to match the new size
     global tilestate
-    tilestate = []
-    for i in range(15):
-        image = f"{v}/{i}.gif"
-        temppath = resize_convert(image,size/15.5,i)
-        tilestate.append(temppath)
-        wn.addshape(temppath)
+    if size/15.5 != prevsize/15.5:
+        tilestate = []
+        for i in range(15):
+            image = f"{v}/{i}.gif"
+            temppath = resize_convert(image,size/15.5,i)
+            tilestate.append(temppath)
+            wn.addshape(temppath)
 # Closed - 9, Flag - 10, Mine - 11, Wintile - 12, Flagfail - 13, FailClick - 14
 
-def playsounds(ids):
+def playsounds(ids): # play all sounds in a list
     for sound in ids:
         sounds[sound].play()
     
 
 
 
-def gamereset(x,y):
+def gamereset(x,y): # when RESET button is clicked
     global GameStarted, mines, dugtiles, isfirstclick
     
     pen.clear()
@@ -114,7 +114,7 @@ def endgame(iswin,row=0,collumn=0):
     
         
          
-def displayMinecount():
+def displayMinecount(): # updates the display of how many flags vs how many mines
     pen.clear()
     pen.goto(0,350)
     flagcount=0
@@ -139,7 +139,7 @@ def checksurrounding(row,collumn,plrclick):
     if GameStarted:
         if (row,collumn) in mines:
             endgame(False,row,collumn)
-        else:
+        elif plrclick != "On Demand":
             if plrclick:
                 numbercounts = [0]
             numminescheck = 0
@@ -161,7 +161,10 @@ def checksurrounding(row,collumn,plrclick):
                 endgame(True)
             elif plrclick:
                 playsounds(numbercounts)
-                trtl.update()  
+                trtl.update()
+        else:
+            playsounds(numbercounts)
+            trtl.update()
 
 
 
@@ -184,7 +187,9 @@ def tileclick(x,y,row,collumn,plrclick):
 
     elif GameStarted and (row,collumn) not in dugtiles and board[row][collumn].shape() == tilestate[9]:
         checksurrounding(row,collumn,plrclick)
-    
+    elif plrclick == "Demand Entry":
+        checksurrounding(row,collumn,"On Demand")
+
 
 
 def tileflag(x,y,row,collumn):
@@ -200,21 +205,26 @@ def tileflag(x,y,row,collumn):
     
 
 def chord(x,y,row,collumn):
+    global numbercounts
     if GameStarted:
         flagcounter = 0
+        numbercounts = []
         for space in allaround(row,collumn):
             if 0 <= space[0] < height and 0 <= space[1] < length:
                 if board[space[0]][space[1]].shape() == tilestate[10]:
                     flagcounter += 1
+                elif board[space[0]][space[1]].shape() == tilestate[9]:
+                    numbercounts = [0]
         if board[row][collumn].shape() == tilestate[flagcounter]:
             for space in allaround(row,collumn):
                 if 0 <= space[0] < height and 0 <= space[1] < length:
-                    tileclick(0,0,space[0],space[1],True)
+                    tileclick(0,0,space[0],space[1],False)
+            tileclick(0,0,row,collumn,"Demand Entry")
                     
     
 
-def changesettings(x,y):
-    global length,height,minecount,board,size,mines,dugtiles,isfirstclick,GameStarted
+def changesettings(x,y): # SETTINGS button stuff
+    global length,height,minecount,board,size,mines,dugtiles,isfirstclick,GameStarted,prevsize
     GameStarted=False
     prevvals = (length,height,minecount)
     stopper = False
@@ -252,6 +262,7 @@ def changesettings(x,y):
                     break
     
     if not stopper:
+        prevsize = size
         size = 600/length
         
         for list in board:
@@ -268,36 +279,38 @@ def changesettings(x,y):
         mines = []
         dugtiles = []
         isfirstclick = True
-
+        
         tileresize()
 
-        tiles = []
-        board = []
-        for sqrow in range(height):
-            for square in range(length):
-                temp = trtl.Turtle(shape=tilestate[9])
-                temp.speed(0)
-                temp.penup()
-                temp.goto((square*size)-(size*(length/2))+(size/2),(sqrow*size)-(size*(height/2))-(size/2))
-                temp.onclick(lambda x, y, row=sqrow, collumn=square, plrclick=True: tileclick(x,y,row,collumn,plrclick))
-                temp.onclick(lambda x, y, row=sqrow, collumn=square: tileflag(x,y,row,collumn), 3)
-                temp.onclick(lambda x, y, row=sqrow, collumn=square: chord(x,y,row,collumn), 2)
-                tiles.append(temp)
-            board.append(tiles)
-            tiles=[]
-        tiles=[]
-        reset.onclick(gamereset)
-        settings.onclick(changesettings)
-        pen.hideturtle()
-        displayMinecount()
-        trtl.update()
+        settheboard()
         
     else:
         length,height,minecount = prevvals
     
     GameStarted=True
 
-
+def settheboard(): # create each board tile and set up lists and functions and such
+    global board
+    tiles = []
+    board = []
+    for sqrow in range(height):
+        for square in range(length):
+            temp = trtl.Turtle(shape=tilestate[9])
+            temp.speed(0)
+            temp.penup()
+            temp.goto((square*size)-(size*(length/2))+(size/2),(sqrow*size)-(size*(height/2))-(size/2))
+            temp.onclick(lambda x, y, row=sqrow, collumn=square, plrclick=True: tileclick(x,y,row,collumn,plrclick))
+            temp.onclick(lambda x, y, row=sqrow, collumn=square: tileflag(x,y,row,collumn), 3)
+            temp.onclick(lambda x, y, row=sqrow, collumn=square: chord(x,y,row,collumn), 2)
+            tiles.append(temp)
+        board.append(tiles)
+        tiles=[]
+    tiles=[]
+    reset.onclick(gamereset)
+    settings.onclick(changesettings)
+    pen.hideturtle()
+    displayMinecount()
+    trtl.update()
 
 
 # Figure this out!!!!!!!!!!!!!!
@@ -323,26 +336,9 @@ settings.penup()
 settings.goto(400,-350)
 
 
-tiles = []
 board = []
-for sqrow in range(height):
-    for square in range(length):
-        temp = trtl.Turtle(shape=tilestate[9])
-        temp.speed(0)
-        temp.penup()
-        temp.goto((square*size)-(size*(length/2))+(size/2),(sqrow*size)-(size*(height/2))-(size/2))
-        temp.onclick(lambda x, y, row=sqrow, collumn=square, plrclick=True: tileclick(x,y,row,collumn,plrclick))
-        temp.onclick(lambda x, y, row=sqrow, collumn=square: tileflag(x,y,row,collumn), 3)
-        temp.onclick(lambda x, y, row=sqrow, collumn=square: chord(x,y,row,collumn), 2)
-        tiles.append(temp)
-    board.append(tiles)
-    tiles=[]
-tiles=[]
-reset.onclick(gamereset)
-settings.onclick(changesettings)
-pen.hideturtle()
-displayMinecount()
-trtl.update()
+
+settheboard()
 
 GameStarted=True
 
