@@ -40,6 +40,7 @@ trtl.update()
 # text inputs
 NUMBERS = ["0","1","2","3","4","5","6","7","8","9","BackSpace","Return","Escape"]
 # sounds initialize
+sound8roll = pygame.mixer.Sound(f"{A}/8roll.wav")
 sounds = []
 for soundname in ["0","1","2","3","4","5","6","7","8","flag","gameover","win"]:
     sounds.append(pygame.mixer.Sound(f"{A}/{soundname}.wav"))
@@ -229,7 +230,12 @@ def checksurrounding(row,collumn,plrclick):
                 trtl.update()
                 endgame(True)
             elif plrclick:
-                playsounds(numbercounts)
+                if 8 in numbercounts:
+                    channel = sound8roll.play()
+                    while channel.get_busy():
+                        pygame.time.delay(100)
+                    playsounds([8])
+                else: playsounds(numbercounts)
                 trtl.update()
         else:
             playsounds(numbercounts)
