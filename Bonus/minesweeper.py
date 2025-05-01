@@ -1,6 +1,9 @@
 ## initialize ..............
-import turtle as trtl, random, sys, pygame
+import turtle as trtl, random, sys, os
 from PIL import Image
+# supress pygame welcome message in terminal
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+import pygame
 # "remove" recursion limit
 sys.setrecursionlimit(100000)
 # setting up the screen
@@ -13,12 +16,8 @@ pygame.mixer.init()
 A = "assets/mine/audio"
 V = "assets/mine/sprites"
 # misc turtle shapes
-wn.addshape(f"{V}/Reset.gif")
-wn.addshape(f"{V}/Settings.gif")
-wn.addshape(f"{V}/Loading.gif")
-wn.addshape(f"{V}/Shovel.gif")
-wn.addshape(f"{V}/Pen.gif")
-wn.addshape(f"{V}/Clear.gif")
+for filename in ["Reset","Settings","Loading","Pen","PenFrame","Clear","Undo"]:
+    wn.addshape(f"{V}/{filename}.gif")
 # booleans
 GameStarted = False
 isfirstclick = True
@@ -28,7 +27,6 @@ Mines = []
 dugtiles = []
 tilestate = []
 numbercounts = []
-writeovers = []
 # regular stuff / default settings
 Minecount = 15
 Length = 10
@@ -36,13 +34,18 @@ Height = 10
 # innitial size
 Prevsize = 0
 Size = 600/Length
+# drawing vars
+drawcount = 0
+drawlist = []
 # turtles
 nflag = trtl.Turtle(shape=f"{V}/Loading.gif")
 reset = trtl.Turtle(shape=f"{V}/Loading.gif")
 settings = trtl.Turtle(shape=f"{V}/Loading.gif")
 logic = trtl.Turtle(shape=f"{V}/Loading.gif")
-clrlogic = trtl.Turtle(shape=f"{V}/Loading.gif")
+undologic = trtl.Turtle(shape=f"{V}/Loading.gif",visible=False)
+clrlogic = trtl.Turtle(shape=f"{V}/Loading.gif",visible=False)
 pen = trtl.Turtle(visible=False)
+lpen = trtl.Turtle(visible=False)
 # show loading "screen"
 wn.update()
 # text inputs
@@ -70,16 +73,15 @@ def resize_convert(image,scale,num): # saves a copy of given image, scaled by sc
     return temppath
 
 def tileresize(): # resize all the files to match the new size
-    global tilestate, writeovers
+    global tilestate
     if Size/15.5 != Prevsize/15.5:
         tilestate = []
-        for i in range(18):
+        for i in range(15):
             image = f"{V}/{i}.gif"
             temppath = resize_convert(image,Size/15.5,i)
             tilestate.append(temppath)
             wn.addshape(temppath)
-    writeovers = [tilestate[9],tilestate[15],tilestate[16],tilestate[17]]
-# Closed - 9, Flag - 10, Mine - 11, Wintile - 12, Flagfail - 13, FailClick - 14, NoteDig - 15, NoteFlag - 16, 5050 - 17
+# Closed - 9, Flag - 10, Mine - 11, Wintile - 12, Flagfail - 13, FailClick - 14
 
 
 def enterUserText(let,message,valids,error): # displays questions and updates the screen on each keyinput
@@ -148,7 +150,8 @@ def getInput(question,Inputs=[],cond=[],errormessage="Invalid Input. Try again."
 
 def gamereset(x,y): # when RESET button is clicked
     global GameStarted, Mines, dugtiles, isfirstclick
-    
+    clearlogic()
+    if logicdraw: drawpen()
     nflag.clear()
     nflag.showturtle()
     GameStarted=False
@@ -195,7 +198,7 @@ def endgame(iswin,row=0,collumn=0):
          
 def displayMinecount(): # updates the display of how many flags vs how many Mines
     nflag.clear()
-    nflag.goto(0,350)
+    nflag.goto(0,325)
     flagcount=0
     for row in board:
             for tile in row:
@@ -203,6 +206,9 @@ def displayMinecount(): # updates the display of how many flags vs how many Mine
                     flagcount+=1
     flag_minesRatio = Minecount-flagcount
     nflag.write(f"Minecount: {flag_minesRatio}/{Minecount} Mines",False,"center",("Arial",15,"bold"))
+    if logicdraw:
+        nflag.goto(0,350)
+        nflag.write(f"Note-Taking Mode",False,"center",("Arial",14,"bold"))
 
 def allaround(row,collumn):
     return [(row-1,collumn+1),(row,collumn+1),(row+1,collumn+1),
@@ -254,8 +260,15 @@ def checksurrounding(row,collumn,plrclick):
 
 
 def tileclick(x,y,row,collumn,plrclick):
-    global isfirstclick
-    if isfirstclick and GameStarted and board[row][collumn].shape() == tilestate[9]:
+    global isfirstclick, drawcount
+    if logicdraw:
+        drawcount = 0
+        lpen.color("gold")
+        lpen.pensize(2)
+        lpen.penup()
+        lpen.goto(x,y)
+        lpen.pendown()
+    elif isfirstclick and GameStarted and board[row][collumn].shape() == tilestate[9]:
         isfirstclick = False
         if (Height*Length)-9 <= Minecount:
             firstclicksafespots = [(row,collumn)]
@@ -268,20 +281,11 @@ def tileclick(x,y,row,collumn,plrclick):
                 if (temp1,temp2) not in Mines and (temp1,temp2) not in firstclicksafespots:
                     Mines.append((temp1,temp2))
         checksurrounding(row,collumn,plrclick)
-
-    elif GameStarted and (row,collumn) not in dugtiles and (board[row][collumn].shape() in writeovers):
+    elif GameStarted and (row,collumn) not in dugtiles and board[row][collumn].shape() == tilestate[9]:
         checksurrounding(row,collumn,plrclick)
     elif plrclick == "Demand Entry":
         checksurrounding(row,collumn,"On Demand")
-    elif logicdraw:
-        if board[row][collumn].shape() == tilestate[15]:
-            playsounds([9])
-            board[row][collumn].shape(tilestate[9])
-        elif board[row][collumn].shape() in writeovers:
-            playsounds([9])
-            board[row][collumn].shape(tilestate[15])
-        wn.update()
-
+    
 
 
 def tileflag(x,y,row,collumn):
@@ -289,18 +293,10 @@ def tileflag(x,y,row,collumn):
         if board[row][collumn].shape() == tilestate[10]:
             playsounds([9])
             board[row][collumn].shape(tilestate[9])
-        elif board[row][collumn].shape() in writeovers:
+        elif board[row][collumn].shape() == tilestate[9]:
             playsounds([9])
             board[row][collumn].shape(tilestate[10])
         displayMinecount()
-        wn.update()
-    elif logicdraw:
-        if board[row][collumn].shape() == tilestate[16]:
-            playsounds([9])
-            board[row][collumn].shape(tilestate[9])
-        elif board[row][collumn].shape() in writeovers:
-            playsounds([9])
-            board[row][collumn].shape(tilestate[16])
         wn.update()
     
 
@@ -320,14 +316,7 @@ def chord(x,y,row,collumn):
                 if 0 <= space[0] < Height and 0 <= space[1] < Length:
                     tileclick(0,0,space[0],space[1],False)
             tileclick(0,0,row,collumn,"Demand Entry")
-    elif logicdraw:
-        if board[row][collumn].shape() == tilestate[17]:
-            playsounds([9])
-            board[row][collumn].shape(tilestate[9])
-        elif board[row][collumn].shape() in writeovers:
-            playsounds([9])
-            board[row][collumn].shape(tilestate[17])
-        wn.update()
+
                     
 def COND_length(inp):
     try:
@@ -357,20 +346,25 @@ def COND_mines(inp):
         else: return False
 
 def changesettings(x,y): # SETTINGS button stuff
-    global Length,Height,Minecount,board,Size,Mines,dugtiles,isfirstclick,GameStarted,Prevsize
+    global Length,Height,Minecount,board,Size,Mines,dugtiles,isfirstclick,GameStarted,Prevsize,drawcount,drawlist
     GameStarted=False
     prevvals = (Length,Height,Minecount)
     stopper = False
-    nflag.clear()
+
+    drawcount = 0
+    drawlist = []
     for list in board:
         for tr in list:
             tr.hideturtle()
     settings.hideturtle()
     reset.hideturtle()
     logic.hideturtle()
+    undologic.hideturtle()
     clrlogic.hideturtle()
     if logicdraw:
         drawpen()
+    nflag.clear()
+    lpen.clear()
     wn.update()
 
     temp = getInput(f"Enter width of board\nRecommended Size: 10",NUMBERS,COND_length,"Cannot be smaller than 6 tiles wide.")
@@ -422,7 +416,6 @@ def changesettings(x,y): # SETTINGS button stuff
         settings.showturtle()
         reset.showturtle()
         logic.showturtle()
-        clrlogic.showturtle()
         displayMinecount()
         wn.update()
         
@@ -440,6 +433,8 @@ def settheboard(): # create each board tile and set up lists and functions and s
             temp.onclick(lambda x, y, row=sqrow, collumn=square, plrclick=True: tileclick(x,y,row,collumn,plrclick))
             temp.onclick(lambda x, y, row=sqrow, collumn=square: tileflag(x,y,row,collumn), 3)
             temp.onclick(lambda x, y, row=sqrow, collumn=square: chord(x,y,row,collumn), 2)
+            temp.ondrag(linedraw)
+            temp.onrelease(stopdrawing)
             tiles.append(temp)
         board.append(tiles)
         tiles=[]
@@ -449,32 +444,68 @@ def settheboard(): # create each board tile and set up lists and functions and s
     nflag.hideturtle()
     settings.showturtle()
     reset.showturtle() 
+    logic.showturtle()
     displayMinecount()
     wn.update()
 
 def drawpen(x=0,y=0):
     global logicdraw, GameStarted
     logicdraw = not logicdraw
+    displayMinecount()
     if logicdraw:
         GameStarted = False
         logic.shape(f"{V}/Pen.gif")
         wn.bgcolor(0.85,0.8,0.7)
     else:
-        logic.shape(f"{V}/Shovel.gif")
+        logic.shape(f"{V}/PenFrame.gif")
         wn.bgcolor(0.9,0.9,0.9)
         GameStarted = True
     wn.update() 
 
-def clearlogic(x,y):
-    for line in board:
-        for tile in line:
-            if tile.shape() in writeovers:
-                tile.shape(tilestate[9])
+
+def linedraw(x,y):
+    global drawcount
+    if logicdraw:
+        lpen.goto(x,y)
+        drawcount += 1
+        wn.update()
+
+def stopdrawing(x,y):
+    if logicdraw:
+        lpen.penup()
+        drawlist.append(drawcount)
+    if len(drawlist)>0:
+        undologic.showturtle()
+        clrlogic.showturtle()
+    wn.update()
+        
+
+
+def undodraw(x,y):
+    if drawlist != []:
+        for i in range(drawlist[-1]+5):
+            lpen.undo()
+        drawlist.pop()
+    if drawlist == []:
+        undologic.hideturtle()
+        clrlogic.hideturtle()
+    wn.update()
+
+
+def clearlogic(x=0,y=0):
+    global drawlist, drawcount
+    lpen.clear()
+    drawcount = 0
+    drawlist = []
+    undologic.hideturtle()
+    clrlogic.hideturtle()
     wn.update()
 
 
 
 tileresize()
+
+
 
 
 
@@ -492,26 +523,28 @@ settings.goto(400,-350)
 pen.penup()
 pen.goto(0,200)
 
-logic.shape(f"{V}/Shovel.gif")
+logic.shape(f"{V}/PenFrame.gif")
 logic.penup()
 logic.goto(400,0)
 logic.onclick(drawpen)
 
+undologic.shape(f"{V}/Undo.gif")
+undologic.penup()
+undologic.goto(400,-75)
+undologic.onclick(undodraw)
+
 clrlogic.shape(f"{V}/Clear.gif")
 clrlogic.penup()
-clrlogic.goto(400,-100)
+clrlogic.goto(400,-150)
 clrlogic.onclick(clearlogic)
 
 
 board = []
 
+
 settheboard()
 
 GameStarted=True
-
-
-
-
 
 
 
