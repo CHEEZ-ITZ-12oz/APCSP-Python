@@ -1,5 +1,5 @@
 ## initialize ..............
-import turtle as trtl, random, sys, os
+import turtle as trtl, random, sys, os, math
 from PIL import Image
 # supress pygame welcome message in terminal
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
@@ -13,10 +13,11 @@ wn.tracer(False)
 pygame.mixer.init()
 ## initialize variables ............
 # filepath shortcuts
+H = "assets/mine"
 A = "assets/mine/audio"
 V = "assets/mine/sprites"
 # misc turtle shapes
-for filename in ["Reset","Settings","Loading","Pen","PenFrame","Clear","Undo"]:
+for filename in ["Reset","Settings","Loading","Pen","PenFrame","Clear","Undo","Leaderboard","Rename"]:
     wn.addshape(f"{V}/{filename}.gif")
 # booleans
 GameStarted = False
@@ -37,25 +38,38 @@ Size = 600/Length
 # drawing vars
 drawcount = 0
 drawlist = []
+# leaderboard vars
+NAME = None
+G_LEADER = []
+l_leader = []
+# Timer vars
+gametimer = 0
+stoptimer = True
 # turtles
-nflag = trtl.Turtle(shape=f"{V}/Loading.gif")
+n_flag = trtl.Turtle(shape=f"{V}/Loading.gif")
 reset = trtl.Turtle(shape=f"{V}/Loading.gif")
 settings = trtl.Turtle(shape=f"{V}/Loading.gif")
 logic = trtl.Turtle(shape=f"{V}/Loading.gif")
+l_board = trtl.Turtle(shape=f"{V}/Loading.gif")
 undologic = trtl.Turtle(shape=f"{V}/Loading.gif",visible=False)
 clrlogic = trtl.Turtle(shape=f"{V}/Loading.gif",visible=False)
 pen = trtl.Turtle(visible=False)
-lpen = trtl.Turtle(visible=False)
+l_pen = trtl.Turtle(visible=False)
 # show loading "screen"
 wn.update()
 # text inputs
 NUMBERS = ["0","1","2","3","4","5","6","7","8","9","BackSpace","Return","Escape"]
+LETTERS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+              'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+                '!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>',
+                  '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~', 'space', "BackSpace","Return","Escape","Shift_L","Shift_R"]
 # sounds initialize
 sound8roll = pygame.mixer.Sound(f"{A}/8roll.wav")
 sounds = []
 for soundname in ["0","1","2","3","4","5","6","7","8","flag","gameover","win"]:
     sounds.append(pygame.mixer.Sound(f"{A}/{soundname}.wav"))
-# 9 - flag, 10 - gameover, 11 - win
+# 9 - flag, 10 - gameover, 11 - win, 12 - write
 
 ## funcitons ............
 # sound playback
@@ -108,7 +122,9 @@ def enterUserText(let,message,valids,error): # displays questions and updates th
         elif let == "Escape": # Returns None
             stopped = True
             answer = None
-        else: # Add valid inputs to the string
+        elif let == "space":
+            userinput += " "
+        elif let not in ["Shift_L","Shift_R"]: # Add valid inputs to the string
             userinput += let
 
         pen.goto(0,200)
@@ -149,11 +165,11 @@ def getInput(question,Inputs=[],cond=[],errormessage="Invalid Input. Try again."
 
 
 def gamereset(x,y): # when RESET button is clicked
-    global GameStarted, Mines, dugtiles, isfirstclick
+    global GameStarted, Mines, dugtiles, isfirstclick, gametimer, stoptimer
     clearlogic()
     if logicdraw: drawpen()
-    nflag.clear()
-    nflag.showturtle()
+    n_flag.clear()
+    n_flag.showturtle()
     GameStarted=False
     for row in board:
         for tile in row:
@@ -161,23 +177,31 @@ def gamereset(x,y): # when RESET button is clicked
     Mines = []
     dugtiles = []
     isfirstclick = True
-    nflag.hideturtle()
-    displayMinecount()
+    stoptimer = True
+    gametimer = 0
+    n_flag.hideturtle()
+    displayInfo(True)
     wn.update()
     
     GameStarted=True
 
-def endgame(iswin,row=0,collumn=0):
-    
-    global GameStarted
+def endgame(iswin,row=0,collumn=0): # triggers upon mineclick or all non-mine tiles clicked
+    global GameStarted, stoptimer
     if GameStarted:
         GameStarted = False
+        stoptimer = True
         if iswin:
             playsounds([11])
             for tile in Mines:
                 board[tile[0]][tile[1]].shape(tilestate[12])
-            nflag.clear()
-            nflag.write(f"You Win!",False,"center",("Arial",20,"bold"))
+            n_flag.clear()
+            n_flag.goto(0,325)
+            n_flag.write(f"You Win!",False,"center",("Arial",20,"bold"))
+            n_flag.goto(0,275)
+            n_flag.write(f"Time: {gametimer}",False,"center",("Arial",13,"normal"))
+            score = calcscore(Minecount,(Length*Height),gametimer)
+            l_leader.append([NAME,score,f"{Length} x {Height} Board - {Minecount} Mines - Time: {gametimer}"])
+            if NAME: updateboard()
         else:
             playsounds([10])
             for line in board:
@@ -190,25 +214,29 @@ def endgame(iswin,row=0,collumn=0):
                 else:
                     board[tile[0]][tile[1]].shape(tilestate[11])
             board[row][collumn].shape(tilestate[14])
-            nflag.clear()
-            nflag.write(f"You Lose!",False,"center",("Arial",20,"bold"))
+            n_flag.clear()
+            n_flag.write(f"You Lose!",False,"center",("Arial",20,"bold"))
     wn.update()
     
         
          
-def displayMinecount(): # updates the display of how many flags vs how many Mines
-    nflag.clear()
-    nflag.goto(0,325)
-    flagcount=0
-    for row in board:
-            for tile in row:
-                if tile.shape() == tilestate[10]:
-                    flagcount+=1
-    flag_minesRatio = Minecount-flagcount
-    nflag.write(f"Minecount: {flag_minesRatio}/{Minecount} Mines",False,"center",("Arial",15,"bold"))
-    if logicdraw:
-        nflag.goto(0,350)
-        nflag.write(f"Note-Taking Mode",False,"center",("Arial",14,"bold"))
+def displayInfo(forcedraw=False): # updates the display of how many flags vs how many Mines as well as the game timer
+    n_flag.clear()
+    n_flag.goto(0,325)
+    if GameStarted or forcedraw or logicdraw:
+        flagcount=0
+        for row in board:
+                for tile in row:
+                    if tile.shape() == tilestate[10]:
+                        flagcount+=1
+        flag_minesRatio = Minecount-flagcount
+        n_flag.write(f"Minecount: {flag_minesRatio}/{Minecount} Mines",False,"center",("Arial",15,"bold"))
+        if logicdraw:
+            n_flag.goto(0,350)
+            n_flag.write(f"Note-Taking Mode",False,"center",("Arial",14,"bold"))
+        if gametimer > 0:
+            n_flag.goto(-25,300)
+            n_flag.write(f"Timer: {gametimer}",font=("Arial",13,"normal"))
 
 def allaround(row,collumn):
     return [(row-1,collumn+1),(row,collumn+1),(row+1,collumn+1),
@@ -260,14 +288,14 @@ def checksurrounding(row,collumn,plrclick):
 
 
 def tileclick(x,y,row,collumn,plrclick):
-    global isfirstclick, drawcount
+    global isfirstclick, drawcount, stoptimer
     if logicdraw:
         drawcount = 0
-        lpen.color("gold")
-        lpen.pensize(2)
-        lpen.penup()
-        lpen.goto(x,y)
-        lpen.pendown()
+        l_pen.color("gold")
+        l_pen.pensize(2)
+        l_pen.penup()
+        l_pen.goto(x,y)
+        l_pen.pendown()
     elif isfirstclick and GameStarted and board[row][collumn].shape() == tilestate[9]:
         isfirstclick = False
         if (Height*Length)-9 <= Minecount:
@@ -281,6 +309,8 @@ def tileclick(x,y,row,collumn,plrclick):
                 if (temp1,temp2) not in Mines and (temp1,temp2) not in firstclicksafespots:
                     Mines.append((temp1,temp2))
         checksurrounding(row,collumn,plrclick)
+        stoptimer = False
+        timertick()
     elif GameStarted and (row,collumn) not in dugtiles and board[row][collumn].shape() == tilestate[9]:
         checksurrounding(row,collumn,plrclick)
     elif plrclick == "Demand Entry":
@@ -296,7 +326,7 @@ def tileflag(x,y,row,collumn):
         elif board[row][collumn].shape() == tilestate[9]:
             playsounds([9])
             board[row][collumn].shape(tilestate[10])
-        displayMinecount()
+        displayInfo()
         wn.update()
     
 
@@ -339,14 +369,14 @@ def COND_height(inp):
 def COND_mines(inp):
     try:
         num = int(inp)
-        if num >= 1 and num < (Length*Height): return True
+        if num >= 1 and num < (Length*Height)-1: return True
         else: return False
     except:
         if inp == None: return True
         else: return False
 
 def changesettings(x,y): # SETTINGS button stuff
-    global Length,Height,Minecount,board,Size,Mines,dugtiles,isfirstclick,GameStarted,Prevsize,drawcount,drawlist
+    global Length,Height,Minecount,board,Size,Mines,dugtiles,isfirstclick,GameStarted,Prevsize,drawcount,drawlist,stoptimer,gametimer
     GameStarted=False
     prevvals = (Length,Height,Minecount)
     stopper = False
@@ -361,10 +391,11 @@ def changesettings(x,y): # SETTINGS button stuff
     logic.hideturtle()
     undologic.hideturtle()
     clrlogic.hideturtle()
+    l_board.hideturtle()
     if logicdraw:
         drawpen()
-    nflag.clear()
-    lpen.clear()
+    n_flag.clear()
+    l_pen.clear()
     wn.update()
 
     temp = getInput(f"Enter width of board\nRecommended Size: 10",NUMBERS,COND_length,"Cannot be smaller than 6 tiles wide.")
@@ -396,8 +427,10 @@ def changesettings(x,y): # SETTINGS button stuff
                 tr.onclick(None)
                 del tr
         del board
-        nflag.clear()
-        nflag.showturtle()
+        n_flag.clear()
+        n_flag.showturtle()
+        stoptimer = True
+        gametimer = 0
         wn.update()
         
         Mines = []
@@ -416,7 +449,8 @@ def changesettings(x,y): # SETTINGS button stuff
         settings.showturtle()
         reset.showturtle()
         logic.showturtle()
-        displayMinecount()
+        l_board.showturtle()
+        displayInfo(True)
         wn.update()
         
     GameStarted=True
@@ -441,17 +475,18 @@ def settheboard(): # create each board tile and set up lists and functions and s
     tiles=[]
     reset.onclick(gamereset)
     settings.onclick(changesettings)
-    nflag.hideturtle()
+    n_flag.hideturtle()
     settings.showturtle()
     reset.showturtle() 
     logic.showturtle()
-    displayMinecount()
+    l_board.showturtle()
+    displayInfo(True)
     wn.update()
 
 def drawpen(x=0,y=0):
     global logicdraw, GameStarted
     logicdraw = not logicdraw
-    displayMinecount()
+    displayInfo(True)
     if logicdraw:
         GameStarted = False
         logic.shape(f"{V}/Pen.gif")
@@ -466,13 +501,13 @@ def drawpen(x=0,y=0):
 def linedraw(x,y):
     global drawcount
     if logicdraw:
-        lpen.goto(x,y)
+        l_pen.goto(x,y)
         drawcount += 1
         wn.update()
 
 def stopdrawing(x,y):
     if logicdraw:
-        lpen.penup()
+        l_pen.penup()
         drawlist.append(drawcount)
     if len(drawlist)>0:
         undologic.showturtle()
@@ -484,7 +519,7 @@ def stopdrawing(x,y):
 def undodraw(x,y):
     if drawlist != []:
         for i in range(drawlist[-1]+5):
-            lpen.undo()
+            l_pen.undo()
         drawlist.pop()
     if drawlist == []:
         undologic.hideturtle()
@@ -494,12 +529,142 @@ def undodraw(x,y):
 
 def clearlogic(x=0,y=0):
     global drawlist, drawcount
-    lpen.clear()
+    l_pen.clear()
     drawcount = 0
     drawlist = []
     undologic.hideturtle()
     clrlogic.hideturtle()
     wn.update()
+
+def showleaderboard(x=0,y=0):
+    global GameStarted,drawcount,drawlist,NAME
+    GameStarted=False
+    drawcount = 0
+    drawlist = []
+    for list in board:
+        for tr in list:
+            tr.hideturtle()
+    settings.hideturtle()
+    reset.hideturtle()
+    logic.hideturtle()
+    undologic.hideturtle()
+    clrlogic.hideturtle()
+    if logicdraw:
+        drawpen()
+    n_flag.clear()
+    l_pen.clear()
+    l_board.hideturtle()
+    if not NAME:
+        NAME = getInput(f"Welcome to the Leaderboard\nEnter Username to continue.",LETTERS)
+        if NAME: NAME = NAME[0:32]
+    if NAME:
+        
+        l_board.showturtle()
+        l_board.shape(f"{V}/Undo.gif")
+        l_board.goto(-50,-300)
+        l_board.onclick(onreturn)
+        settings.showturtle()
+        settings.shape(f"{V}/Rename.gif")
+        settings.goto(100,-300)
+        settings.onclick(refreshwithNoName)
+
+        updateboard()
+
+        userfont = ("Arial",12,"normal")
+        largest = 0
+        for line in G_LEADER:
+            name = line[0]
+            pen.goto(0,325)
+            pen.write(name,True,"left",userfont)
+            if pen.xcor() > largest:
+                largest = pen.xcor()
+        pen.clear()
+        rankx = -200
+        infox = largest + (rankx + 75)
+
+        pen.setx(rankx-40)
+        pen.write(f"username: {NAME}\n\nRANK.  USERNAME",font=userfont)
+        pen.setx(infox)
+        pen.write(f"SCORE     ",True,"left",font=userfont)
+        pen.sety(pen.ycor()-45)
+
+        for i in range(len(G_LEADER)):
+            pen.setx(rankx)
+            pen.write(f"{i+1}.    {G_LEADER[i][0]}",font=userfont)
+            pen.setx(infox)
+            pen.write(f"{round(float(G_LEADER[i][1]))}     ",True,"left",font=userfont)
+            pen.write(f"Board info: {G_LEADER[i][2]}",font=("Arial",8,"italic"))
+            pen.sety(pen.ycor()-25)
+
+    else:
+        onreturn()
+    wn.update()
+
+
+def onreturn(x=0,y=0):
+    global GameStarted
+    for list in board:
+        for tr in list:
+            tr.showturtle()
+    pen.clear()
+    settings.showturtle()
+    settings.goto(400,-350)
+    settings.shape(f"{V}/Settings.gif")
+    settings.onclick(changesettings)
+    reset.showturtle()
+    logic.showturtle()
+    l_board.showturtle()
+    l_board.shape(f"{V}/Leaderboard.gif")
+    l_board.goto(-400,350)
+    l_board.onclick(showleaderboard)
+    displayInfo(True)
+    wn.update()
+    GameStarted=True
+
+def updateboard():
+    global G_LEADER, l_leader
+    newlist = []
+    for entree in (l_leader + G_LEADER):
+        insert = 0
+        if entree[0] == None:
+            entree[0] = NAME
+        for i in range(len(newlist)):
+            if float(newlist[i][1]) > float(entree[1]):
+                insert += 1
+        newlist.insert(insert,entree)
+    G_LEADER = newlist
+    l_leader = []
+    while len(G_LEADER) > 10:
+        G_LEADER.pop(-1)
+    with open (f"{H}/leaderboard.txt","w") as file1:
+        for line in G_LEADER:
+            text = f"{line[0]};;:;\":^^@D':;{line[1]};;:;\":^^@D':;{line[2]}\n"
+            file1.write(f"{text}")
+
+def calcscore(mine,tiles,gametime):
+    mineweight = 2
+    tileweight = 1
+    timeweight = 0.01
+    targetdensity = 0.7
+    punishstrength = 5
+    smoothness = 0.5
+    reductionfactor = 100
+    total =  (1/reductionfactor) * (((mine**mineweight) * (tiles**tileweight) * (math.e ** (-punishstrength*((((mine/tiles)-targetdensity)/smoothness)**2))) ) - ((mine*gametime/tiles)**(timeweight*mine)))
+    if total <= 0 or (mine/tiles) > targetdensity:
+        return 0
+    return total
+
+def timertick():
+    global gametimer
+    if not stoptimer:
+        gametimer = round(gametimer + 0.01, 2)
+        displayInfo()
+        wn.ontimer(timertick,10)
+
+def refreshwithNoName(x,y):
+    global NAME
+    NAME = None
+    showleaderboard()
 
 
 
@@ -509,8 +674,8 @@ tileresize()
 
 
 
-nflag.penup()
-nflag.goto(0,350)
+n_flag.penup()
+n_flag.goto(0,350)
 
 reset.shape(f"{V}/Reset.gif")
 reset.penup()
@@ -538,10 +703,21 @@ clrlogic.penup()
 clrlogic.goto(400,-150)
 clrlogic.onclick(clearlogic)
 
+l_board.shape(f"{V}/Leaderboard.gif")
+l_board.penup()
+l_board.goto(-400,350)
+l_board.onclick(showleaderboard)
+
+# grab leaderboard
+
+with open(f"{H}/leaderboard.txt","r") as file1:
+    for line in file1:
+        line = line.strip()
+        tmplist = line.split(f";;:;\":^^@D':;")
+        G_LEADER.append(tmplist)
+
 
 board = []
-
-
 settheboard()
 
 GameStarted=True
