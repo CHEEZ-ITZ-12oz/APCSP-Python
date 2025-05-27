@@ -2,6 +2,7 @@ import turtle as trtl, math
 # inntialize ..........
 wn = trtl.Screen()
 wn.tracer(False)
+wn.bgcolor("black")
 
 DEBUG_2D = False  # Debug mode. Displays a 2d version of the maze
 
@@ -83,8 +84,8 @@ plr.goto(0,50)
 
 # main procedures.........
 def updatescreen():
-    pen.clear()
     if not DEBUG_2D: 
+        pen.clear()
         grouppoints = []
         for list in wallpoints:
             grouppoints += list 
@@ -107,18 +108,21 @@ def updatescreen():
                 # color...
                 whi = 0.01 * ((plrdist*0.05)**2) -0.2 # fog increses with distance
                 if whi < 0: whi = 0 # any negative values become 0, so the program doesn't error
-                r,g,b = [0,0,0] # values to add subtle color to different wall types
-                if pt in wallh: b= 0.05 - 0.1* whi
-                if pt in wallv: g=0.05 - 0.1* whi
-                if pt in wallp: g,b = [0.02- 0.1* whi,0.02- 0.1* whi]
-                if pt in wallg: r,g = [0.4- 0.2* whi,0.3- 0.2* whi] # goal point must be more strongly marked
+                if pt in wallh: r,g,b = [1,1,1] # values to add subtle color to different wall types
+                elif pt in wallv: r,g,b = [0.9,0.9,0.9]
+                elif pt in wallp: r,g,b = [0.8,0.8,0.8]
+                elif pt in wallg: r,g,b = [0.7,0.5,0.1] # goal point must be more strongly marked
+                else: r,g,b = [0,0,0]
                 # add fog strength to each color
-                r += whi
+                r -= whi
                 if r > 1: r = 1
-                g += whi
+                if r < 0: r = 0
+                g -= whi
                 if g > 1: g = 1
-                b += whi
+                if g < 0: g = 0
+                b -= whi
                 if b > 1: b = 1
+                if b < 0: b = 0
                 # rendering
                 if not abs(diff) > FOV and dist != 0: # only render if withing a certain range of the player (FOV)
                     pen.pensize(10*(wnxscale/16)/plrdist+20) # smoother walls when futher away, but cover up closer walls
