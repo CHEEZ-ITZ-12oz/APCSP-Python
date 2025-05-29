@@ -1,14 +1,19 @@
-import turtle as trtl, math
+import turtle as trtl, math, random
 # inntialize ..........
 wn = trtl.Screen()
 wn.tracer(False)
-wn.bgcolor("black")
+
 
 DEBUG_2D = False  # Debug mode. Displays a 2d version of the maze
 
+if not DEBUG_2D: wn.bgcolor("black")
+
+
 SCALE = 1
 
-FOV = 50
+FOV = 40
+
+RENDERDIST = 150
 
 r1 = False # left
 r2 = False # right
@@ -26,55 +31,116 @@ pen.pensize(30)
 trace = trtl.Turtle(visible=False)
 trace.penup()
 
+number = 0
+
+warping = False
+
+gameover = False
 
 wallh = [] # horizontal walls
 wallv = [] # vertical walls
-wallp = [] # misc walls / posts
+wallp = [] # gimmick walls / posts
 wallg = [] # goal points
 wallpoints = [wallh,wallv,wallp,wallg]
 
 # functions ...........
-def createpoint(pos,dest=wallpoints[3]): # creates a point and assigns it to a designated list
+def createpoint(pos,dest=wallpoints[3],num=-1): # creates a point and assigns it to a designated list
     if DEBUG_2D:
         temp = trtl.Turtle(visible=DEBUG_2D,shape="circle")
+        if dest == wallpoints[1]: temp.color("blue")
         temp.penup()
         temp.goto(pos)
+        temp.onclick(lambda x,y,disp=num:print(disp))
     else:
         temp = (pos)
     dest.append(temp)
 
 def createwall(pointA,pointB,ptype=0,step=SCALE): # creates a list of points between two points and assigns it to a dedicated list
+    global number
     trace.goto(pointA)
     trace.setheading(math.degrees(math.atan2((pointB[1]-pointA[1]),(pointB[0]-pointA[0]))))
     distance = 0
     destination = trace.distance(pointB)
+    number += 1
     while distance < destination:
         trace.forward(step)
         distance += step
-        createpoint(trace.pos(),wallpoints[ptype])
-    wn.update()
+        createpoint(trace.pos(),wallpoints[ptype],number)
+        
 
 
 
 
 # innitialize map
+# outer walls (1-4)
+createwall((-300,-300), (300,-300), 0)
+createwall((-300,300), (300,300), 0)
+createwall((-300,-300), (-300,300), 1)
+createwall((300,-300), (300,300), 1)
+# the rest of it (5-10)
 createwall((-200,100), (100,100), 0)
 createwall((-100,50), (-100,-100), 1)
 createwall((-100,50), (-200,50), 0)
 createwall((100,50), (200,50), 0)
 createwall((100,100), (100,200), 1)
 createwall((200,50), (200,0), 1)
+# 11-20
 createwall((200,-50), (200,-100), 1)
 createwall((250,-100), (250,200), 1)
 createwall((-200,50), (-200,-100), 1)
 createwall((-250,-100), (-250,200), 1)
 createwall((-200,200), (0,200), 0)
-createwall((0,0),(150,0),0)
-createwall((150,0),(150,-100),0)
 
+createwall((0,0),(150,0),0)
+createwall((150,0),(150,-100),1)
 createwall((-100,100), (-100,150), 1)
 createwall((-50,125), (-50,150), 1)
-createwall((-100,150), (-50,150), 1)
+createwall((-100,150), (-50,150), 0)
+# 21-30
+createwall((-200,-100), (-150,-100), 0)
+createwall((-100,-50), (-150,-50), 0)
+createwall((-200,0), (-150,0), 0)
+createwall((100,50), (100,0), 1)
+createwall((-25,150), (150,150), 0)
+
+createwall((-50,125), (50,125), 0)
+createwall((75,125), (75,100), 1)
+createwall((-200,200), (-200,250), 1)
+createwall((200,-200), (200,-300), 1)
+createwall((200,-200), (250,-200), 0)
+# 31-40
+createwall((-50,50), (-50,-100), 1)
+createwall((50,50), (50,100), 1)
+createwall((-50,-50), (100,-50), 0)
+createwall((150,-150), (300,-150), 0)
+createwall((150,-150), (150,-250), 1)
+
+createwall((200,200), (150,200), 0)
+createwall((200,100), (150,100), 0)
+createwall((200,150), (250,150), 0)
+createwall((200,200), (200,150), 1)
+createwall((150,150), (150,100), 1)
+# 41-50
+for i in range(10): # the random rooms
+    isx = random.randint(0,1)
+    x1 = random.randint(-275,125)
+    y1 = random.randint(-275,-175)
+    if isx == 1:
+        x2 = x1
+        y2 = random.randint(-275,-175)
+    else:
+        y2 = y1
+        x2 = random.randint(-275,125)
+    createwall((x1,y1), (x2,y2), isx)
+# 51-60
+createwall((-150,150), (-150,100), 1)
+createwall((-150,250), (250,250), 0)
+createwall((50,225), (50,175), 1)
+
+
+
+createpoint((-250,250), wallpoints[2])
+createpoint((250,-250), wallpoints[2])
 
 createpoint((-75,125))
 
@@ -84,119 +150,142 @@ plr.goto(0,50)
 
 # main procedures.........
 def updatescreen():
-    if not DEBUG_2D: 
+    if (not DEBUG_2D) or (not gameover): 
         pen.clear()
         grouppoints = []
         for list in wallpoints:
-            grouppoints += list 
+            grouppoints += list
+        grouppoints = {item for item in grouppoints if plr.distance(item) < RENDERDIST + 20}  # do not render anything that is out of the view distance
         grouppoints = sorted(grouppoints,key=plr.distance,reverse=True) # organize all points in a list from back to front for layering
         for pt in grouppoints:
             plrdist = plr.distance(pt)
-            if plrdist < 225: # do not render anything that is out of the view distance
-                # angle...
-                diffx = (pt[0]-plr.xcor())
-                diffy = (pt[1]-plr.ycor())
-                pointangle = math.degrees(math.atan2(diffy,diffx)) # angle the plr must be to face the point
-                diff = (pointangle-plr.heading()+180)%360-180 # how much the plr must turn to face the point
-                # scale...
-                wnyscale = wn.window_height()*0.8
-                wnxscale = wn.window_width()
-                # how tall the point should render, accounting for fisheye effect
-                dist = plrdist/12 * math.cos(math.radians(pointangle-plr.heading())) 
-                if dist < 0: dist = 0 # any negative values become 0, so they wont get rendered
-                if pt in wallg: dist *= 2 # half the height of goal points
-                # color...
-                whi = 0.01 * ((plrdist*0.05)**2) -0.2 # fog increses with distance
-                if whi < 0: whi = 0 # any negative values become 0, so the program doesn't error
-                if pt in wallh: r,g,b = [1,1,1] # values to add subtle color to different wall types
-                elif pt in wallv: r,g,b = [0.9,0.9,0.9]
-                elif pt in wallp: r,g,b = [0.8,0.8,0.8]
-                elif pt in wallg: r,g,b = [0.7,0.5,0.1] # goal point must be more strongly marked
-                else: r,g,b = [0,0,0]
-                # add fog strength to each color
-                r -= whi
-                if r > 1: r = 1
-                if r < 0: r = 0
-                g -= whi
-                if g > 1: g = 1
-                if g < 0: g = 0
-                b -= whi
-                if b > 1: b = 1
-                if b < 0: b = 0
-                # rendering
-                if not abs(diff) > FOV and dist != 0: # only render if withing a certain range of the player (FOV)
-                    pen.pensize(10*(wnxscale/16)/plrdist+20) # smoother walls when futher away, but cover up closer walls
-                    pen.color(r,g,b)
-                    pen.goto(-(((diff+FOV)/(2*FOV))*wnxscale)+(wnxscale/2),wnyscale/dist)
-                    pen.pendown()
-                    pen.sety(-wnyscale/dist)
-                    pen.penup()
+            # angle...
+            diffx = (pt[0]-plr.xcor())
+            diffy = (pt[1]-plr.ycor())
+            pointangle = math.degrees(math.atan2(diffy,diffx)) # angle the plr must be to face the point
+            diff = (pointangle-plr.heading()+180)%360-180 # how much the plr must turn to face the point
+            # scale...
+            wnyscale = wn.window_height()*0.8
+            wnxscale = wn.window_width()
+            # how tall the point should render, accounting for fisheye effect
+            dist = plrdist/12 * math.cos(math.radians(pointangle-plr.heading())) 
+            if dist < 0: dist = 0 # any negative values become 0, so they wont get rendered
+            if pt in wallg or pt in wallp: dist *= 2 # half the height of goal points
+            # color...
+            whi = 0.01 * ((((200/RENDERDIST)**2)*(plrdist*0.05))**2) -0.2 # fog increses with distance
+            if whi < 0: whi = 0 # any negative values become 0, so the program doesn't error
+            if pt in wallh: r,g,b = [1,1,1] # values to add subtle color to different wall types
+            elif pt in wallv: r,g,b = [0.9,0.9,0.9]
+            elif pt in wallp: r,g,b = [0.4,0.4,0.8]
+            elif pt in wallg: r,g,b = [0.7,0.5,0.1] # goal point must be more strongly marked
+            else: r,g,b = [0,0,0]
+            # add fog strength to each color
+            r -= whi
+            if r < 0: r = 0
+            g -= whi
+            if g < 0: g = 0
+            b -= whi
+            if b < 0: b = 0
+            # rendering
+            if not abs(diff) > FOV+5 and dist != 0: # only render if withing a certain range of the player (FOV)
+                pen.pensize(12*(wnxscale/16)/plrdist+20) # smoother walls when futher away, but cover up closer walls
+                pen.color(r,g,b)
+                pen.goto(-(((diff+FOV)/(2*FOV))*wnxscale)+(wnxscale/2),wnyscale/dist)
+                pen.pendown()
+                pen.sety(-wnyscale/dist)
+                pen.penup()
     wn.update()
 
+def winscreen():
+    pen.clear()
+    pen.goto(0,0)
+    pen.color("gold")
+    pen.write("You Win!",False,"center",("Arial",30,"bold"))
+    wn.update()
+
+def bonuscollisions(): # collision detection for win and warp
+    global warping, gameover,r1,r2,r3,r4
+    for list in wallpoints:
+        for tr in list:
+            if tr in wallg and plr.distance(tr) < 20: # End
+                gameover = True
+                r1,r2,r3,r4 = [False,False,False,False]
+                for i in range(4):
+                    wn.onkeypress(None,buttons[i])
+                    wn.onkeyrelease(None,buttons[i])
+                wn.ontimer(winscreen,100)
+            if tr in wallp and plr.distance(tr) < 15 and not warping: # warppoint
+                warping = True
+                plr.goto(-plr.pos()[0],-plr.pos()[1])
+                plr.setheading(plr.heading()+180)
+            elif tr in wallp and warping: # exit warppoint
+                warping = False
+                for pt in wallp:
+                    if plr.distance(pt) < 50:
+                        warping = True
 
 
+def allaround(x,y,step=1):
+    diagstep = math.sqrt((step**2)/2)
+    return [(x-diagstep,y+diagstep),(x,y+step),(x+diagstep,y+diagstep),
+            (x-step,y),(x,y),(x+step,y),
+            (x-diagstep,y-diagstep),(x,y-step),(x+diagstep,y-diagstep)]
+
+def isinwall():
+    coli = False
+    for tr in wallh + wallv:
+        if plr.distance(tr) < 10: coli = True
+    return coli
+
+def pushout(curx,cury):
+    runcount = 1
+    while runcount < 10:
+        out = False
+        for pos in allaround(curx,cury,runcount):
+            if not out:
+                plr.goto(pos)
+                if not isinwall(): 
+                    out = True
+            else: break
+        if out: break
+        runcount += 1
 
 def turnleft(): # turn left
     if r1:
         plr.left(10)
         updatescreen()
-        wn.ontimer(turnleft,50)
+        wn.ontimer(turnleft,10)
 
 def turnright(): # turn right
     if r2:
         plr.right(10)
         updatescreen()
-        wn.ontimer(turnright,50)
+        wn.ontimer(turnright,10)
 
 def walk(): # move forward (on up arrow)
     if r3:
-        prevpos = plr.pos()
-        plr.forward(10)
-        collide = False
-        for list in wallpoints: # collision detection
-            for tr in list:
-                if tr in wallg and plr.distance(tr) < 20:
-                    print(True)
-                if plr.distance(tr) < 10:
-                    if tr in wallh: collide = "h"
-                    elif tr in wallv: collide = "v"
-                    else: collide = True
-        # collision correction
-        if collide == "h": plr.setx(plr.xcor()+(plr.xcor()-prevpos[0]))
-        elif collide == "v": plr.sety(plr.ycor()+(plr.ycor()-prevpos[1]))
-        if collide:
-            plr.back(10)
-            for list in wallpoints:
-                for tr in list:
-                    if plr.distance(tr) < 10: plr.goto(prevpos)
+        stepcount = 0
+        while stepcount < 3:
+            plr.forward(3)
+            curx,cury = plr.pos()
+            if isinwall(): pushout(curx,cury)
+            stepcount += 1
+        bonuscollisions()
         updatescreen()
-        wn.ontimer(walk,50)
+        wn.ontimer(walk,10)
 
 
 def backwalk(): # move backward (on down arrow)
     if r4:
-        prevpos = plr.pos()
-        plr.back(10)
-        collide = False
-        for list in wallpoints: # collision detection
-            for tr in list:
-                if tr in wallg and plr.distance(tr) < 20:
-                    print(True)
-                if plr.distance(tr) < 10:
-                    if tr in wallh: collide = "h"
-                    elif tr in wallv: collide = "v"
-                    else: collide = True
-        # collision correction
-        if collide == "h": plr.setx(plr.xcor()+(plr.xcor()-prevpos[0]))
-        elif collide == "v": plr.sety(plr.ycor()+(plr.ycor()-prevpos[1]))
-        if collide:
-            plr.forward(10)
-            for list in wallpoints:
-                for tr in list:
-                    # if collision correction fails to take the player out of the wall, just put they mabk where they were before
-                    if plr.distance(tr) < 10: plr.goto(prevpos)
+        stepcount = 0
+        while stepcount < 3:
+            plr.backward(3)
+            curx,cury = plr.pos()
+            if isinwall(): pushout(curx,cury)
+            stepcount += 1
+        bonuscollisions()
         updatescreen()
-        wn.ontimer(backwalk,50)
+        wn.ontimer(backwalk,10)
 
 def startup(procedure,inp):
     global r1,r2,r3,r4
