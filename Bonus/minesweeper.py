@@ -1,11 +1,12 @@
 ## initialize ..............
-import turtle as trtl, random, sys, os, math
-from PIL import Image
+import sys, os
 # supress pygame welcome message in terminal
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-import pygame
 # "remove" recursion limit
 sys.setrecursionlimit(100000)
+# import everything else
+import turtle as trtl, random, pygame, math
+from PIL import Image
 # setting up the screen
 wn = trtl.Screen()
 wn.bgcolor(0.9,0.9,0.9)
@@ -19,6 +20,16 @@ V = "assets/mine/sprites"
 # misc turtle shapes
 for filename in ["Reset","Settings","Loading","Pen","PenFrame","Clear","Undo","Leaderboard","Rename"]:
     wn.addshape(f"{V}/{filename}.gif")
+# turtles
+n_flag = trtl.Turtle(shape=f"{V}/Loading.gif",visible=False)
+reset = trtl.Turtle(shape=f"{V}/Loading.gif")
+settings = trtl.Turtle(shape=f"{V}/Loading.gif")
+logic = trtl.Turtle(shape=f"{V}/Loading.gif")
+l_board = trtl.Turtle(shape=f"{V}/Loading.gif")
+undologic = trtl.Turtle(shape=f"{V}/Loading.gif",visible=False)
+clrlogic = trtl.Turtle(shape=f"{V}/Loading.gif",visible=False)
+pen = trtl.Turtle(visible=False)
+l_pen = trtl.Turtle(visible=False)
 # booleans
 GameStarted = False
 isfirstclick = True
@@ -45,16 +56,6 @@ l_leader = []
 # Timer vars
 gametimer = 0
 stoptimer = True
-# turtles
-n_flag = trtl.Turtle(shape=f"{V}/Loading.gif")
-reset = trtl.Turtle(shape=f"{V}/Loading.gif")
-settings = trtl.Turtle(shape=f"{V}/Loading.gif")
-logic = trtl.Turtle(shape=f"{V}/Loading.gif")
-l_board = trtl.Turtle(shape=f"{V}/Loading.gif")
-undologic = trtl.Turtle(shape=f"{V}/Loading.gif",visible=False)
-clrlogic = trtl.Turtle(shape=f"{V}/Loading.gif",visible=False)
-pen = trtl.Turtle(visible=False)
-l_pen = trtl.Turtle(visible=False)
 # show loading "screen"
 wn.update()
 # text inputs
@@ -244,9 +245,6 @@ def allaround(row,collumn):
             (row-1,collumn-1),(row,collumn-1),(row+1,collumn-1)]
     
 
-
-
-
 def checksurrounding(row,collumn,plrclick):
     global numbercounts
     if GameStarted:
@@ -270,7 +268,6 @@ def checksurrounding(row,collumn,plrclick):
                         tileclick(0,0,tile[0],tile[1],False)
 
             if len(dugtiles) == (Length*Height-Minecount):
-                wn.update()
                 endgame(True)
             elif plrclick:
                 if 8 in numbercounts:
@@ -280,11 +277,10 @@ def checksurrounding(row,collumn,plrclick):
                     playsounds([8])
                 else: playsounds(numbercounts)
                 wn.update()
+            
         else:
             playsounds(numbercounts)
             wn.update()
-
-
 
 
 def tileclick(x,y,row,collumn,plrclick):
@@ -316,7 +312,6 @@ def tileclick(x,y,row,collumn,plrclick):
     elif plrclick == "Demand Entry":
         checksurrounding(row,collumn,"On Demand")
     
-
 
 def tileflag(x,y,row,collumn):
     if GameStarted:
@@ -351,7 +346,7 @@ def chord(x,y,row,collumn):
 def COND_length(inp):
     try:
         num = int(inp)
-        if num >= 6: return True
+        if 100 >= num >= 6: return True
         else: return False
     except:
         if inp == None: return True
@@ -398,7 +393,7 @@ def changesettings(x,y): # SETTINGS button stuff
     l_pen.clear()
     wn.update()
 
-    temp = getInput(f"Enter width of board\nRecommended Size: 10",NUMBERS,COND_length,"Cannot be smaller than 6 tiles wide.")
+    temp = getInput(f"Enter width of board\nRecommended Size: 10",NUMBERS,COND_length,"Must be between 6 and 100 tiles wide.")
     if temp == None:
         stopper = True
     else:
@@ -420,15 +415,11 @@ def changesettings(x,y): # SETTINGS button stuff
         Prevsize = Size
         Size = 600/Length
         
-        for list in board:
-            for tr in list:
-                tr.goto(1000,1000)
-                tr.hideturtle()
-                tr.onclick(None)
-                del tr
-        del board
-        n_flag.clear()
-        n_flag.showturtle()
+        wn.reset()
+        wn.clear()
+        wn.tracer(0)
+
+        spawnandsetturtles(set=False)
         stoptimer = True
         gametimer = 0
         wn.update()
@@ -438,7 +429,7 @@ def changesettings(x,y): # SETTINGS button stuff
         isfirstclick = True
         
         tileresize()
-
+        spawnandsetturtles(spawn=False)
         settheboard()
         
     else:
@@ -475,11 +466,6 @@ def settheboard(): # create each board tile and set up lists and functions and s
     tiles=[]
     reset.onclick(gamereset)
     settings.onclick(changesettings)
-    n_flag.hideturtle()
-    settings.showturtle()
-    reset.showturtle() 
-    logic.showturtle()
-    l_board.showturtle()
     displayInfo(True)
     wn.update()
 
@@ -648,7 +634,7 @@ def calcscore(mine,tiles,gametime):
     targetdensity = 0.7
     punishstrength = 5
     smoothness = 0.5
-    reductionfactor = 100
+    reductionfactor = 80
     total =  (1/reductionfactor) * (((mine**mineweight) * (tiles**tileweight) * (math.e ** (-punishstrength*((((mine/tiles)-targetdensity)/smoothness)**2))) ) - ((mine*gametime/tiles)**(timeweight*mine)))
     if total <= 0 or (mine/tiles) > targetdensity:
         return 0
@@ -668,45 +654,57 @@ def refreshwithNoName(x,y):
 
 
 
+def spawnandsetturtles(spawn=True,set=True):
+    global n_flag, reset, settings, logic, l_board, undologic, clrlogic, pen, l_pen
+    if spawn:
+        n_flag = trtl.Turtle(shape=f"{V}/Loading.gif")
+        reset = trtl.Turtle(shape=f"{V}/Loading.gif")
+        settings = trtl.Turtle(shape=f"{V}/Loading.gif")
+        logic = trtl.Turtle(shape=f"{V}/Loading.gif")
+        l_board = trtl.Turtle(shape=f"{V}/Loading.gif")
+        undologic = trtl.Turtle(shape=f"{V}/Loading.gif",visible=False)
+        clrlogic = trtl.Turtle(shape=f"{V}/Loading.gif",visible=False)
+        pen = trtl.Turtle(visible=False)
+        l_pen = trtl.Turtle(visible=False)
+    if set:
+        n_flag.penup()
+        n_flag.goto(0,350)
+        n_flag.hideturtle()
+
+        reset.shape(f"{V}/Reset.gif")
+        reset.penup()
+        reset.goto(-400,-350)
+
+        settings.shape(f"{V}/Settings.gif")
+        settings.penup()
+        settings.goto(400,-350)
+
+        pen.penup()
+        pen.goto(0,200)
+
+        logic.shape(f"{V}/PenFrame.gif")
+        logic.penup()
+        logic.goto(400,0)
+        logic.onclick(drawpen)
+
+        undologic.shape(f"{V}/Undo.gif")
+        undologic.penup()
+        undologic.goto(400,-75)
+        undologic.onclick(undodraw)
+
+        clrlogic.shape(f"{V}/Clear.gif")
+        clrlogic.penup()
+        clrlogic.goto(400,-150)
+        clrlogic.onclick(clearlogic)
+
+        l_board.shape(f"{V}/Leaderboard.gif")
+        l_board.penup()
+        l_board.goto(-400,350)
+        l_board.onclick(showleaderboard)
+
+
 tileresize()
 
-
-
-
-
-n_flag.penup()
-n_flag.goto(0,350)
-
-reset.shape(f"{V}/Reset.gif")
-reset.penup()
-reset.goto(-400,-350)
-
-settings.shape(f"{V}/Settings.gif")
-settings.penup()
-settings.goto(400,-350)
-
-pen.penup()
-pen.goto(0,200)
-
-logic.shape(f"{V}/PenFrame.gif")
-logic.penup()
-logic.goto(400,0)
-logic.onclick(drawpen)
-
-undologic.shape(f"{V}/Undo.gif")
-undologic.penup()
-undologic.goto(400,-75)
-undologic.onclick(undodraw)
-
-clrlogic.shape(f"{V}/Clear.gif")
-clrlogic.penup()
-clrlogic.goto(400,-150)
-clrlogic.onclick(clearlogic)
-
-l_board.shape(f"{V}/Leaderboard.gif")
-l_board.penup()
-l_board.goto(-400,350)
-l_board.onclick(showleaderboard)
 
 # grab leaderboard
 
@@ -716,6 +714,7 @@ with open(f"{H}/leaderboard.txt","r") as file1:
         tmplist = line.split(f";;:;\":^^@D':;")
         G_LEADER.append(tmplist)
 
+spawnandsetturtles(spawn=False)
 
 board = []
 settheboard()
