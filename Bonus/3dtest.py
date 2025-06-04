@@ -11,9 +11,9 @@ if not DEBUG_2D: wn.bgcolor("black")
 
 SCALE = 1
 
-FOV = 40
+FOV = 40 # default 40
 
-RENDERDIST = 150
+RENDERDIST = 150 # default 150
 
 r1 = False # left
 r2 = False # right
@@ -196,7 +196,7 @@ def updatescreen():
                 pen.penup()
     wn.update()
 
-def winscreen():
+def winscreen(): # display win screen
     pen.clear()
     pen.goto(0,0)
     pen.color("gold")
@@ -225,23 +225,23 @@ def bonuscollisions(): # collision detection for win and warp
                         warping = True
 
 
-def allaround(x,y,step=1):
+def allaround(x,y,step=1): # returns a list of all points step units away (in the 8 cardinal directions)
     diagstep = math.sqrt((step**2)/2)
     return [(x-diagstep,y+diagstep),(x,y+step),(x+diagstep,y+diagstep),
-            (x-step,y),(x,y),(x+step,y),
+            (x-step,y),(x+step,y),
             (x-diagstep,y-diagstep),(x,y-step),(x+diagstep,y-diagstep)]
 
-def isinwall():
+def isinwall(): # collision check
     coli = False
     for tr in wallh + wallv:
         if plr.distance(tr) < 10: coli = True
     return coli
 
-def pushout(curx,cury):
+def pushout(curx,cury): # moves the player out of walls. 
     runcount = 1
-    while runcount < 10:
+    while runcount < 10: # the magnitude of correction
         out = False
-        for pos in allaround(curx,cury,runcount):
+        for pos in allaround(curx,cury,runcount): # move in a circle around collision point until you are out of a wall
             if not out:
                 plr.goto(pos)
                 if not isinwall(): 
@@ -287,7 +287,7 @@ def backwalk(): # move backward (on down arrow)
         updatescreen()
         wn.ontimer(backwalk,10)
 
-def startup(procedure,inp):
+def startup(procedure,inp): # onkeypress
     global r1,r2,r3,r4
     if inp == 0:
         r1 = True
@@ -300,7 +300,7 @@ def startup(procedure,inp):
     wn.onkeypress(None,buttons[inp])
     procedure()
 
-def stoppress(inp):
+def stoppress(inp): # onkeyrelease
     global r1,r2,r3,r4
     if inp == 0:
         r1 = False
