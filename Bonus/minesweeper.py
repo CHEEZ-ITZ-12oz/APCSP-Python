@@ -1,4 +1,4 @@
-## initialize ..............
+## .............. initialize ..............
 import sys, os
 # supress pygame welcome message in terminal
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
@@ -12,7 +12,7 @@ wn = trtl.Screen()
 wn.bgcolor(0.9,0.9,0.9)
 wn.tracer(False)
 pygame.mixer.init()
-## initialize variables ............
+## ............ initialize variables ............
 # filepath shortcuts
 H = "assets/mine"
 A = "assets/mine/audio"
@@ -72,12 +72,11 @@ for soundname in ["0","1","2","3","4","5","6","7","8","flag","gameover","win"]:
     sounds.append(pygame.mixer.Sound(f"{A}/{soundname}.wav"))
 # 9 - flag, 10 - gameover, 11 - win, 12 - write
 
-## funcitons ............
+## ............ funcitons ............
 # sound playback
 def playsounds(ids): # play all sounds in a list
     for sound in ids:
         sounds[sound].play()
-    
 
 def resize_convert(image,scale,num): # saves a copy of given image, scaled by scale, and returns the new filepath
     img = Image.open(image)
@@ -97,7 +96,6 @@ def tileresize(): # resize all the files to match the new size
             tilestate.append(temppath)
             wn.addshape(temppath)
 # Closed - 9, Flag - 10, Mine - 11, Wintile - 12, Flagfail - 13, FailClick - 14
-
 
 def enterUserText(let,message,valids,error): # displays questions and updates the screen on each keyinput
     global stopped, answer, userinput
@@ -127,7 +125,6 @@ def enterUserText(let,message,valids,error): # displays questions and updates th
             userinput += " "
         elif let not in ["Shift_L","Shift_R"]: # Add valid inputs to the string
             userinput += let
-
         pen.goto(0,200)
         pen.write(f"{message}\nPress Enter to Finish",False,"center",("Arial", 20, "bold"))
         pen.goto(0,150)
@@ -162,8 +159,6 @@ def getInput(question,Inputs=[],cond=[],errormessage="Invalid Input. Try again."
         wn.onkeypress(None,letter)
     wn.update()
     return answer
-
-
 
 def gamereset(x,y): # when RESET button is clicked
     global GameStarted, Mines, dugtiles, isfirstclick, gametimer, stoptimer
@@ -200,26 +195,24 @@ def endgame(iswin,row=0,collumn=0): # triggers upon mineclick or all non-mine ti
             n_flag.write(f"You Win!",False,"center",("Arial",20,"bold"))
             n_flag.goto(0,275)
             n_flag.write(f"Time: {gametimer}",False,"center",("Arial",13,"normal"))
-            score = calcscore(Minecount,(Length*Height),gametimer)
-            l_leader.append([NAME,score,f"{Length} x {Height} Board - {Minecount} Mines - Time: {gametimer}"])
-            if NAME: updateboard()
+            score = calcscore(Minecount,(Length*Height),gametimer) # score
+            l_leader.append([NAME,score,f"{Length} x {Height} Board - {Minecount} Mines - Time: {gametimer}"]) # local leaderboard is added to global leaderboard when it is opened
+            if NAME: updateboard() # add to global leaderboard automatically if a name exists for the player
         else:
             playsounds([10])
             for line in board:
                 for tile in line:
-                    if tile.shape() == tilestate[10]:
+                    if tile.shape() == tilestate[10]: # all flags become flag-fails
                         tile.shape(tilestate[13])
-            for tile in Mines:
-                if board[tile[0]][tile[1]].shape() == tilestate[13]:    
+            for tile in Mines: # on each mine tile, display mines and correct flage
+                if board[tile[0]][tile[1]].shape() == tilestate[13]: # if flag fail, display flag
                     board[tile[0]][tile[1]].shape(tilestate[10])
-                else:
+                else: # otherwise, display missed mine
                     board[tile[0]][tile[1]].shape(tilestate[11])
             board[row][collumn].shape(tilestate[14])
             n_flag.clear()
             n_flag.write(f"You Lose!",False,"center",("Arial",20,"bold"))
     wn.update()
-    
-        
          
 def displayInfo(forcedraw=False): # updates the display of how many flags vs how many Mines as well as the game timer
     n_flag.clear()
@@ -239,38 +232,37 @@ def displayInfo(forcedraw=False): # updates the display of how many flags vs how
             n_flag.goto(-25,300)
             n_flag.write(f"Timer: {gametimer}",font=("Arial",13,"normal"))
 
-def allaround(row,collumn):
+def allaround(row,collumn): # input of a tile position. Returns the 8 tiles around it and itself.
     return [(row-1,collumn+1),(row,collumn+1),(row+1,collumn+1),
             (row-1,collumn),(row,collumn),(row+1,collumn),
             (row-1,collumn-1),(row,collumn-1),(row+1,collumn-1)]
     
-
-def checksurrounding(row,collumn,plrclick):
+def checksurrounding(row,collumn,plrclick): # logic block controlling what happens when a tile is clicked
     global numbercounts
     if GameStarted:
-        if (row,collumn) in Mines:
+        if (row,collumn) in Mines: # lose if a mine is clicked
             endgame(False,row,collumn)
         elif plrclick != "On Demand":
-            if plrclick:
-                numbercounts = [0]
+            if plrclick: # only on the player click (doesnt run if it's opening multiple tiles at once)
+                numbercounts = [0] # for sound que
             numminescheck = 0
             for mine in Mines:
                 if mine in allaround(row,collumn):
                     numminescheck += 1
-            board[row][collumn].shape(tilestate[numminescheck])
+            board[row][collumn].shape(tilestate[numminescheck]) # display the number assosiated with the number of surrounding mines
             dugtiles.append((row,collumn))
-            if numminescheck not in numbercounts:
+            if numminescheck not in numbercounts: # if a unique number, add it to the sound que
                 numbercounts.append(numminescheck)
-            if numminescheck == 0:
+            if numminescheck == 0: # automatically click all tiles around a 0
                 for tile in allaround(row,collumn):
                     if 0 <= tile[0] < Height and 0 <= tile[1] < Length and tile not in dugtiles:
                         board[tile[0]][tile[1]].shape(tilestate[9])
                         tileclick(0,0,tile[0],tile[1],False)
 
-            if len(dugtiles) == (Length*Height-Minecount):
+            if len(dugtiles) == (Length*Height-Minecount): # Win detection
                 endgame(True)
-            elif plrclick:
-                if 8 in numbercounts:
+            elif plrclick: # only play sounds when all possible tiles have been opened
+                if 8 in numbercounts: # unique interaction for 8-tile
                     channel = sound8roll.play()
                     while channel.get_busy():
                         pygame.time.delay(100)
@@ -278,42 +270,40 @@ def checksurrounding(row,collumn,plrclick):
                 else: playsounds(numbercounts)
                 wn.update()
             
-        else:
+        else: # this line only runs at the end of a chord to update the screen properly
             playsounds(numbercounts)
             wn.update()
 
-
-def tileclick(x,y,row,collumn,plrclick):
+def tileclick(x,y,row,collumn,plrclick): # handle what happens when a tile is clicked
     global isfirstclick, drawcount, stoptimer
-    if logicdraw:
+    if logicdraw: # draw if in drawing mode instead of clicking tiles
         drawcount = 0
         l_pen.color("gold")
         l_pen.pensize(2)
         l_pen.penup()
         l_pen.goto(x,y)
         l_pen.pendown()
-    elif isfirstclick and GameStarted and board[row][collumn].shape() == tilestate[9]:
+    elif isfirstclick and GameStarted and board[row][collumn].shape() == tilestate[9]: # first click
         isfirstclick = False
-        if (Height*Length)-9 <= Minecount:
+        if (Height*Length)-9 <= Minecount: # if there are too many mines, only the first tile can be clicked
             firstclicksafespots = [(row,collumn)]
-        else:
+        else: # guarantee the first tile is a 0
             firstclicksafespots = allaround(row,collumn)
-        for i in range(Minecount):
+        for i in range(Minecount): # randomly spawn mines
             while len(Mines) <= i:
                 temp1 = random.randint(0,Height-1)
                 temp2 = random.randint(0,Length-1)
                 if (temp1,temp2) not in Mines and (temp1,temp2) not in firstclicksafespots:
                     Mines.append((temp1,temp2))
-        checksurrounding(row,collumn,plrclick)
+        checksurrounding(row,collumn,plrclick) # open all surrounding tiles
         stoptimer = False
         timertick()
-    elif GameStarted and (row,collumn) not in dugtiles and board[row][collumn].shape() == tilestate[9]:
+    elif GameStarted and (row,collumn) not in dugtiles and board[row][collumn].shape() == tilestate[9]: # any other click after the first one
         checksurrounding(row,collumn,plrclick)
-    elif plrclick == "Demand Entry":
+    elif plrclick == "Demand Entry": # unique demand entry click that only happens after a chording
         checksurrounding(row,collumn,"On Demand")
     
-
-def tileflag(x,y,row,collumn):
+def tileflag(x,y,row,collumn): # handle what happens when a tile is flagged
     if GameStarted:
         if board[row][collumn].shape() == tilestate[10]:
             playsounds([9])
@@ -324,26 +314,24 @@ def tileflag(x,y,row,collumn):
         displayInfo()
         wn.update()
     
-
-def chord(x,y,row,collumn):
+def chord(x,y,row,collumn): # handle a chording (middle click)
     global numbercounts
     if GameStarted:
         flagcounter = 0
         numbercounts = []
-        for space in allaround(row,collumn):
+        for space in allaround(row,collumn): # check the number of flags around a space
             if 0 <= space[0] < Height and 0 <= space[1] < Length:
                 if board[space[0]][space[1]].shape() == tilestate[10]:
                     flagcounter += 1
                 elif board[space[0]][space[1]].shape() == tilestate[9]:
                     numbercounts = [0]
-        if board[row][collumn].shape() == tilestate[flagcounter]:
+        if board[row][collumn].shape() == tilestate[flagcounter]: # if the number matches the number of the tile, click the rest of the tiles and force a screen update
             for space in allaround(row,collumn):
                 if 0 <= space[0] < Height and 0 <= space[1] < Length:
                     tileclick(0,0,space[0],space[1],False)
-            tileclick(0,0,row,collumn,"Demand Entry")
-
-                    
-def COND_length(inp):
+            tileclick(0,0,row,collumn,"Demand Entry") # force a screen update
+                   
+def COND_length(inp): # limit to board length
     try:
         num = int(inp)
         if 100 >= num >= 6: return True
@@ -352,7 +340,7 @@ def COND_length(inp):
         if inp == None: return True
         else: return False
 
-def COND_height(inp):
+def COND_height(inp): # limit to board height
     try:
         num = int(inp)
         if 0 < num <= Length: return True
@@ -361,7 +349,7 @@ def COND_height(inp):
         if inp == None: return True
         else: return False
 
-def COND_mines(inp):
+def COND_mines(inp): # limit to number of mines
     try:
         num = int(inp)
         if num >= 1 and num < (Length*Height)-1: return True
@@ -373,9 +361,9 @@ def COND_mines(inp):
 def changesettings(x,y): # SETTINGS button stuff
     global Length,Height,Minecount,board,Size,Mines,dugtiles,isfirstclick,GameStarted,Prevsize,drawcount,drawlist,stoptimer,gametimer
     GameStarted=False
-    prevvals = (Length,Height,Minecount)
+    prevvals = (Length,Height,Minecount) # save in case of cancelation
     stopper = False
-
+    # hide everything
     drawcount = 0
     drawlist = []
     for list in board:
@@ -392,7 +380,7 @@ def changesettings(x,y): # SETTINGS button stuff
     n_flag.clear()
     l_pen.clear()
     wn.update()
-
+    # ask the user for inputs: Height, Length, and Minecount
     temp = getInput(f"Enter width of board\nRecommended Size: 10",NUMBERS,COND_length,"Must be between 6 and 100 tiles wide.")
     if temp == None:
         stopper = True
@@ -410,29 +398,25 @@ def changesettings(x,y): # SETTINGS button stuff
             stopper = True
         else:
             Minecount = int(temp)
-    
-    if not stopper:
+    if not stopper: # run if all inputs entered
         Prevsize = Size
         Size = 600/Length
-        
+        # refersh the screen to delete any unused turtle and reinitialize
         wn.reset()
         wn.clear()
         wn.tracer(0)
-
+        wn.bgcolor(0.9,0.9,0.9)
         spawnandsetturtles(set=False)
         stoptimer = True
         gametimer = 0
         wn.update()
-        
         Mines = []
         dugtiles = []
         isfirstclick = True
-        
         tileresize()
         spawnandsetturtles(spawn=False)
-        settheboard()
-        
-    else:
+        settheboard() 
+    else: # show everything again and restore settings
         Length,Height,Minecount = prevvals
         for list in board:
             for tr in list:
@@ -469,7 +453,7 @@ def settheboard(): # create each board tile and set up lists and functions and s
     displayInfo(True)
     wn.update()
 
-def drawpen(x=0,y=0):
+def drawpen(x=0,y=0): # logic to switch modes between playing and note-taking mode
     global logicdraw, GameStarted
     logicdraw = not logicdraw
     displayInfo(True)
@@ -483,37 +467,33 @@ def drawpen(x=0,y=0):
         GameStarted = True
     wn.update() 
 
-
-def linedraw(x,y):
+def linedraw(x,y): # puts the pen down for note-taking mode.
     global drawcount
     if logicdraw:
         l_pen.goto(x,y)
         drawcount += 1
         wn.update()
 
-def stopdrawing(x,y):
+def stopdrawing(x,y): # puts the pen up for note-taking mode.
     if logicdraw:
         l_pen.penup()
         drawlist.append(drawcount)
-    if len(drawlist)>0:
+    if len(drawlist)>0: # if drawings exist, display edit buttons
         undologic.showturtle()
         clrlogic.showturtle()
     wn.update()
         
-
-
-def undodraw(x,y):
+def undodraw(x,y): # undoes the last drawing
     if drawlist != []:
         for i in range(drawlist[-1]+5):
             l_pen.undo()
         drawlist.pop()
-    if drawlist == []:
+    if drawlist == []: # hide editing buttons if no more drawings exist 
         undologic.hideturtle()
         clrlogic.hideturtle()
     wn.update()
 
-
-def clearlogic(x=0,y=0):
+def clearlogic(x=0,y=0): # clear all drawings
     global drawlist, drawcount
     l_pen.clear()
     drawcount = 0
@@ -522,11 +502,12 @@ def clearlogic(x=0,y=0):
     clrlogic.hideturtle()
     wn.update()
 
-def showleaderboard(x=0,y=0):
+def showleaderboard(x=0,y=0): # logic behind the leaderboard button
     global GameStarted,drawcount,drawlist,NAME
     GameStarted=False
     drawcount = 0
     drawlist = []
+    # hide everything
     for list in board:
         for tr in list:
             tr.hideturtle()
@@ -540,11 +521,10 @@ def showleaderboard(x=0,y=0):
     n_flag.clear()
     l_pen.clear()
     l_board.hideturtle()
-    if not NAME:
+    if not NAME: # ask the user for a name if none exists
         NAME = getInput(f"Welcome to the Leaderboard\nEnter Username to continue.",LETTERS)
-        if NAME: NAME = NAME[0:32]
-    if NAME:
-        
+        if NAME: NAME = NAME[0:32] # cull name if too long
+    if NAME: # display leaderboard
         l_board.showturtle()
         l_board.shape(f"{V}/Undo.gif")
         l_board.goto(-50,-300)
@@ -553,9 +533,7 @@ def showleaderboard(x=0,y=0):
         settings.shape(f"{V}/Rename.gif")
         settings.goto(100,-300)
         settings.onclick(refreshwithNoName)
-
         updateboard()
-
         userfont = ("Arial",12,"normal")
         largest = 0
         for line in G_LEADER:
@@ -567,13 +545,11 @@ def showleaderboard(x=0,y=0):
         pen.clear()
         rankx = -200
         infox = largest + (rankx + 75)
-
         pen.setx(rankx-40)
         pen.write(f"username: {NAME}\n\nRANK.  USERNAME",font=userfont)
         pen.setx(infox)
         pen.write(f"SCORE     ",True,"left",font=userfont)
         pen.sety(pen.ycor()-45)
-
         for i in range(len(G_LEADER)):
             pen.setx(rankx)
             pen.write(f"{i+1}.    {G_LEADER[i][0]}",font=userfont)
@@ -581,13 +557,11 @@ def showleaderboard(x=0,y=0):
             pen.write(f"{round(float(G_LEADER[i][1]))}     ",True,"left",font=userfont)
             pen.write(f"Board info: {G_LEADER[i][2]}",font=("Arial",8,"italic"))
             pen.sety(pen.ycor()-25)
-
-    else:
+    else: # if name input cancelled, return to game
         onreturn()
     wn.update()
 
-
-def onreturn(x=0,y=0):
+def onreturn(x=0,y=0): # return to game
     global GameStarted
     for list in board:
         for tr in list:
@@ -607,7 +581,7 @@ def onreturn(x=0,y=0):
     wn.update()
     GameStarted=True
 
-def updateboard():
+def updateboard(): # add all local leaderboards to the global leaderboard and save to a seperate file
     global G_LEADER, l_leader
     newlist = []
     for entree in (l_leader + G_LEADER):
@@ -627,34 +601,32 @@ def updateboard():
             text = f"{line[0]};;:;\":^^@D':;{line[1]};;:;\":^^@D':;{line[2]}\n"
             file1.write(f"{text}")
 
-def calcscore(mine,tiles,gametime):
+def calcscore(mine,tiles,gametime): # calculate scores based on an equasion. (I love desmos 3d)
     mineweight = 2
     tileweight = 1
     timeweight = 0.01
     targetdensity = 0.7
     punishstrength = 5
     smoothness = 0.5
-    reductionfactor = 80
+    reductionfactor = 20
     total =  (1/reductionfactor) * (((mine**mineweight) * (tiles**tileweight) * (math.e ** (-punishstrength*((((mine/tiles)-targetdensity)/smoothness)**2))) ) - ((mine*gametime/tiles)**(timeweight*mine)))
-    if total <= 0 or (mine/tiles) > targetdensity:
+    if total <= 0 or (mine/tiles) > targetdensity: # if score is too low (density is too low) or density is too high (over 70% is entirely luck based and requires no skill) return 0
         return 0
     return total
 
-def timertick():
+def timertick(): # handle the timer. "Lags" with the game to make it more fair for laggier compluters (totally not a bug)
     global gametimer
     if not stoptimer:
         gametimer = round(gametimer + 0.01, 2)
         displayInfo()
         wn.ontimer(timertick,10)
 
-def refreshwithNoName(x,y):
+def refreshwithNoName(x,y): # clear the name and prompt the user for a new one
     global NAME
     NAME = None
     showleaderboard()
 
-
-
-def spawnandsetturtles(spawn=True,set=True):
+def spawnandsetturtles(spawn=True,set=True): # spawn and set turtles to the respective locations and onclick functions
     global n_flag, reset, settings, logic, l_board, undologic, clrlogic, pen, l_pen
     if spawn:
         n_flag = trtl.Turtle(shape=f"{V}/Loading.gif")
@@ -702,25 +674,22 @@ def spawnandsetturtles(spawn=True,set=True):
         l_board.goto(-400,350)
         l_board.onclick(showleaderboard)
 
+## .......... MAIN ............
 
-tileresize()
-
+tileresize() # initialize tiles to their respective size
 
 # grab leaderboard
-
 with open(f"{H}/leaderboard.txt","r") as file1:
     for line in file1:
         line = line.strip()
         tmplist = line.split(f";;:;\":^^@D':;")
         G_LEADER.append(tmplist)
-
+# initialize turtles' locations
 spawnandsetturtles(spawn=False)
-
+# set up the board
 board = []
 settheboard()
-
+# start the game
 GameStarted=True
-
-
-
+# wn.mainloop()
 wn.mainloop()
