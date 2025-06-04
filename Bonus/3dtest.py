@@ -3,11 +3,9 @@ import turtle as trtl, math, random
 wn = trtl.Screen()
 wn.tracer(False)
 
-
 DEBUG_2D = False  # Debug mode. Displays a 2d version of the maze
 
 if not DEBUG_2D: wn.bgcolor("black")
-
 
 SCALE = 1
 
@@ -66,10 +64,6 @@ def createwall(pointA,pointB,ptype=0,step=SCALE): # creates a list of points bet
         trace.forward(step)
         distance += step
         createpoint(trace.pos(),wallpoints[ptype],number)
-        
-
-
-
 
 # innitialize map
 # outer walls (1-4)
@@ -136,12 +130,9 @@ for i in range(10): # the random rooms
 createwall((-150,150), (-150,100), 1)
 createwall((-150,250), (250,250), 0)
 createwall((50,225), (50,175), 1)
-
-
-
+# warp points and goal point
 createpoint((-250,250), wallpoints[2])
 createpoint((250,-250), wallpoints[2])
-
 createpoint((-75,125))
 
 wn.update()
